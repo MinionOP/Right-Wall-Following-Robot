@@ -1,0 +1,57 @@
+#ifndef PIDCONTROLLER_H_
+#define PIDCONTROLLER_H_
+
+typedef struct{
+	double Kp, Ki, Kd;
+	double targetRDist;
+	double Port;
+	double Integral;
+	double iMax;
+	double iMin;
+	double Derivative;
+	double prevError;
+	double prevMeasurement;
+	double Correction;
+}PIDController;
+
+//Duty cycle 60: kp = 2.0 ki = 0.0 kd = 0.3
+//Duty cycle 70: kp = 2.0 ki = 0.0 kd = 0.5
+
+void InitPIDController(PIDController *pid){
+	pid->Kp = 2.0;
+	pid->Ki = 0.0;
+	pid->Kd = 0.5;
+	pid->iMax = 20;
+	pid->iMin = -20;
+	pid->prevError = 0;
+	pid->prevMeasurement = 0;
+	pid->Correction = 0;
+	pid->targetRDist = 10.0;	//10cm
+}
+
+double PIDControllerUpdate(PIDController *pid, double distMeasure, double PWMPeriod, double BASE_WIDTH){
+	double error = distMeasure - pid->targetRDist;
+	if(abs(error) <20){
+		double PWMPeriod = PWMGenPeriodGet(PWM1_BASE,PWM_GEN_3);
+
+		pid-> Port = pid->Kp * error;
+		pid->Integral = pid->Integral + pid->Ki *(error + pid->prevError);
+		if(pid->Integral > pid ->iMax){
+			pid->Integral = pid->iMax;
+		}
+		else if(pid->Integral < pid->iMin){
+			pid->Integral = pid->iMin;
+		}
+		pid->Derivative = pid->Kd * (error - pid->prevError);
+		pid->prevError = error;
+		pid->Correction = pid->Port + pid->Integral + pid->Derivative;
+
+		if(pid->Correction > (PWMPeriod - BASE_WIDTH)){
+			pid->Correction = PWMPeriod - BASE_WIDTH;
+		}
+	}
+	return BASE_WIDTH - (pid->Correction * PWMPeriod)/100;
+
+}
+
+#endif /* PIDCONTROLLER_H_ */
