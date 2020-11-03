@@ -180,6 +180,7 @@ void PIDControllerLoop(void){
 		Semaphore_pend(PIDSem,BIOS_WAIT_FOREVER);										//Pend semaphore
 		double distRMeasured = readRDistSensor();
 		double distFMeasured = readFDistSensor();
+		//Will create a state array later
 		if(distRMeasured > 15){	//20
 			rightTurn();
 		}
