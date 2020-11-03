@@ -28,7 +28,7 @@ void InitPIDController(PIDController *pid){
 	pid->prevError = 0;
 	pid->prevMeasurement = 0;
 	pid->Correction = 0;
-	pid->targetRDist = 10.0;	//10cm
+	pid->targetRDist = 9.0;	//10cm
 }
 
 double PIDControllerUpdate(PIDController *pid, double distMeasure, double PWMPeriod, double BASE_WIDTH){
