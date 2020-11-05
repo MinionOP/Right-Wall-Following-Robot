@@ -1,5 +1,5 @@
 //Team 9: Charle Nguyen, Edward Sotelo, Josh McHenry
-//Milestone 6
+//Milestone 7
 
 #include <xdc/std.h>
 #include <ti/sysbios/BIOS.h>
@@ -31,7 +31,7 @@
 #include "PIDController.h"
 
 
-#define BASE_WIDTH 340						//85% duty cycle
+#define BASE_WIDTH 300						//75% duty cycle
 
 void setRDutyCycle(double);
 void setLDutyCycle(double);
@@ -47,7 +47,6 @@ void rightTurn(void);
 void uTurn(void);
 
 void InitHardware(void);
-
 
 void TimerInt(void);						//Timer interrupt
 void PIDControllerLoop(void);				//Task
@@ -86,11 +85,11 @@ void InitHardware(void){
 	PWMGenConfigure(PWM1_BASE,PWM_GEN_3, PWM_GEN_MODE_DOWN | PWM_GEN_MODE_NO_SYNC);
 	PWMGenPeriodSet(PWM1_BASE, PWM_GEN_2, 400);										//Set period: 400 clock ticks
 	PWMGenPeriodSet(PWM1_BASE, PWM_GEN_3, 400);
-	PWMPulseWidthSet(PWM1_BASE, PWM_OUT_5, BASE_WIDTH);									//50% duty cycle
+	PWMPulseWidthSet(PWM1_BASE, PWM_OUT_5, BASE_WIDTH);								//50% duty cycle
 	PWMPulseWidthSet(PWM1_BASE, PWM_OUT_6, BASE_WIDTH);
 
-	PWMGenEnable(PWM1_BASE, PWM_GEN_3);							//Right Wheel
-	PWMGenEnable(PWM1_BASE, PWM_GEN_2);							//Left Wheel
+	PWMGenEnable(PWM1_BASE, PWM_GEN_3);												//Right Wheel
+	PWMGenEnable(PWM1_BASE, PWM_GEN_2);												//Left Wheel
 	PWMOutputState(PWM1_BASE, PWM_OUT_5_BIT | PWM_OUT_6_BIT, true);					//Enable output
 
 //---------------------------------------------------------------------------------------------
@@ -126,7 +125,7 @@ void InitHardware(void){
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_TIMER2); 									//Enable Timer Peripheral
 	while(!(SysCtlPeripheralReady(SYSCTL_PERIPH_TIMER2)));							//Wait until peripheral is ready
 	TimerConfigure(TIMER2_BASE,TIMER_CFG_PERIODIC);									//Configure a full width periodic timer
-	TimerLoadSet(TIMER2_BASE,TIMER_A,((SysCtlClockGet())/100)-1);						//Set timer load value.
+	TimerLoadSet(TIMER2_BASE,TIMER_A,((SysCtlClockGet())/100)-1);					//Set timer load value.
 	TimerIntEnable(TIMER2_BASE,TIMER_TIMA_TIMEOUT);									//Enable timerA interrupt
 	TimerEnable(TIMER2_BASE,TIMER_A);												//Enable timer
 
@@ -135,6 +134,7 @@ void InitHardware(void){
 //---------------------------------------------------------------------------------------------
 double currentWidthL =  BASE_WIDTH;
 double currentWidthR =  BASE_WIDTH;
+uint32_t rightState = 0;
 int delayStatus = 0;
 volatile uint32_t time = 0;
 
@@ -145,32 +145,37 @@ void TimerInt(void){
 	time = time+1;
 	if(delayStatus == 0 && time%50 == 0){
 		time = time%1000;
-		Semaphore_post(PIDSem);															//Post semaphore, pend semaphore in PIDControllerLoop
+		Semaphore_post(PIDSem);														//Post semaphore, pend semaphore in PIDControllerLoop
 	}
 }
 
 
-void delay(uint32_t wait){
-	delayStatus = 1;
+void delay(uint32_t wait){	//1ms
+	delayStatus = 1;				//Set delayStatus = 1, so interrupt will not post semaphore
 	uint32_t initial = time;
 	while(time - initial <wait);
 	delayStatus= 0;
 }
 
+
+
 void rightTurn(void){
-	delay(18);
-	PWMOutputState(PWM1_BASE, PWM_OUT_6_BIT, false);
-	delay(65);
-	PWMOutputState(PWM1_BASE, PWM_OUT_6_BIT, true);
-	// 18 65 sort of work for duty 85
-	// 15 65 sort of work for duty 85
+	rightState = 1;
+	setRDutyCycle(BASE_WIDTH);
+	rWheelReverse();
+	delay(37);
+	rWheelForward();
+	PWMOutputState(PWM1_BASE, PWM_OUT_5_BIT | PWM_OUT_6_BIT, false);
+
 }
+
 
 void uTurn(void){
 	setRDutyCycle(BASE_WIDTH);
-	rWheelReverse();
-	delay(70);
-	rWheelForward();
+	lWheelReverse();
+	delay(75);
+	lWheelForward();
+	PWMOutputState(PWM1_BASE, PWM_OUT_5_BIT | PWM_OUT_6_BIT, false);
 }
 
 
@@ -180,13 +185,39 @@ void PIDControllerLoop(void){
 		Semaphore_pend(PIDSem,BIOS_WAIT_FOREVER);										//Pend semaphore
 		double distRMeasured = readRDistSensor();
 		double distFMeasured = readFDistSensor();
+<<<<<<< HEAD
+		//If robot have just finished rotating right
+		if(rightState == 1){
+			//Check if sensor can detect right wall. If it does not, move a short amount of distance forward
+			if(distRMeasured > 15){
+			PWMOutputState(PWM1_BASE, PWM_OUT_5_BIT | PWM_OUT_6_BIT, true);
+			delay(25);
+			PWMOutputState(PWM1_BASE, PWM_OUT_5_BIT | PWM_OUT_6_BIT, false);
+			}
+			//Right wall detect, set rightState to 0.
+			else{
+				PWMOutputState(PWM1_BASE, PWM_OUT_5_BIT | PWM_OUT_6_BIT, true);
+				rightState = 0;
+			}
+		}
+		//If robot does not detect right wall, rotate right
+		if(distRMeasured > 15 && rightState == 0){	//20
+			PWMOutputState(PWM1_BASE, PWM_OUT_5_BIT | PWM_OUT_6_BIT, true);
+			delay(40);
+=======
+		//Will create a state array later
 		if(distRMeasured > 15){	//20
+>>>>>>> c50511877b6af8b49791246b91ad3ddfdb484df3
 			rightTurn();
 		}
-		else if(distRMeasured <15 && distFMeasured < 20){
+		//If dead end is detected, make a u turn
+		else if(distRMeasured <15 && distFMeasured < 15){
+			PWMOutputState(PWM1_BASE, PWM_OUT_5_BIT | PWM_OUT_6_BIT, true);
 			uTurn();
 		}
-		else if(distRMeasured > 0){
+		//Drive forward using pid
+		else if(distRMeasured > 0 && rightState == 0){
+			PWMOutputState(PWM1_BASE, PWM_OUT_5_BIT | PWM_OUT_6_BIT, true);
 			currentWidthR = PIDControllerUpdate(pid, readRDistSensor(), 400, BASE_WIDTH);
 			setRDutyCycle(currentWidthR);													//Set new duty cycle
 		}
