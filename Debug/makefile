@@ -124,32 +124,32 @@ endif
 
 # Add inputs and outputs from these tool invocations to the build variables 
 EXE_OUTPUTS += \
-Milestone6.out \
+Milestone7.out \
 
 EXE_OUTPUTS__QUOTED += \
-"Milestone6.out" \
+"Milestone7.out" \
 
 BIN_OUTPUTS += \
-Milestone6.hex \
+Milestone7.hex \
 
 BIN_OUTPUTS__QUOTED += \
-"Milestone6.hex" \
+"Milestone7.hex" \
 
 
 # All Target
-all: Milestone6.out
+all: Milestone7.out
 
 # Tool invocations
-Milestone6.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS)
+Milestone7.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: ARM Linker'
-	"C:/ti/ccsv6/tools/compiler/arm_15.12.3.LTS/bin/armcl" -mv7M4 --code_state=16 --float_support=FPv4SPD16 -me -g --gcc --define=ccs="ccs" --define=PART_TM4C123GH6PM --define=ccs --define=TIVAWARE --diag_wrap=off --diag_warning=225 --diag_warning=255 --display_error_number --gen_func_subsections=on --abi=eabi -z -m"Milestone6.map" --stack_size=512 --heap_size=0 -i"C:/ti/ccsv6/tools/compiler/arm_15.12.3.LTS/lib" -i"C:/ti/ccsv6/tools/compiler/arm_15.12.3.LTS/include" --reread_libs --diag_wrap=off --warn_sections --display_error_number --xml_link_info="Milestone6_linkInfo.xml" --rom_model -o "Milestone6.out" $(ORDERED_OBJS)
+	"C:/ti/ccsv6/tools/compiler/arm_15.12.3.LTS/bin/armcl" -mv7M4 --code_state=16 --float_support=FPv4SPD16 -me -g --gcc --define=ccs="ccs" --define=PART_TM4C123GH6PM --define=ccs --define=TIVAWARE --diag_wrap=off --diag_warning=225 --diag_warning=255 --display_error_number --gen_func_subsections=on --abi=eabi -z -m"Milestone7.map" --stack_size=512 --heap_size=0 -i"C:/ti/ccsv6/tools/compiler/arm_15.12.3.LTS/lib" -i"C:/ti/ccsv6/tools/compiler/arm_15.12.3.LTS/include" --reread_libs --diag_wrap=off --warn_sections --display_error_number --xml_link_info="Milestone7_linkInfo.xml" --rom_model -o "Milestone7.out" $(ORDERED_OBJS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
-Milestone6.hex: $(EXE_OUTPUTS)
+Milestone7.hex: $(EXE_OUTPUTS)
 	@echo 'Invoking: ARM Hex Utility'
-	"C:/ti/ccsv6/tools/compiler/arm_15.12.3.LTS/bin/armhex"  -o "Milestone6.hex" $(EXE_OUTPUTS__QUOTED)
+	"C:/ti/ccsv6/tools/compiler/arm_15.12.3.LTS/bin/armhex"  -o "Milestone7.hex" $(EXE_OUTPUTS__QUOTED)
 	@echo 'Finished building: $@'
 	@echo ' '
 

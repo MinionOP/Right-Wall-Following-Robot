@@ -16,26 +16,35 @@ typedef struct{
 
 //Duty cycle 60: kp = 2.0 ki = 0.0 kd = 0.3
 //Duty cycle 70: kp = 2.0 ki = 0.0 kd = 0.5
+//Duty cycle 85: kp = .5., ki = .1 kd = 5 Works
+//Duty cycle 75: kp = 1.5 ki = 0.1 kd = 6.0
+//Duty cycle 65: kp = .5 ki = .1 kd = 5
 
 void InitPIDController(PIDController *pid){
-	pid->Kp = 2.0;
-	pid->Ki = 0.0;
-	pid->Kd = 0.5;
-	pid->iMax = 20;
-	pid->iMin = -20;
+	pid->Kp = 1.0;
+	pid->Ki = 0.1;
+	pid->Kd = 5.0;
+	pid->iMax = 3;
+	pid->iMin = -3;
 	pid->prevError = 0;
 	pid->prevMeasurement = 0;
 	pid->Correction = 0;
-	pid->targetRDist = 10.0;	//10cm
+<<<<<<< HEAD
+<<<<<<< HEAD
+	pid->targetRDist = 8.5;	//10cm
+=======
+	pid->targetRDist = 9.0;	//10cm
+>>>>>>> c50511877b6af8b49791246b91ad3ddfdb484df3
+=======
+	pid->targetRDist = 9.0;	//10cm
+>>>>>>> c50511877b6af8b49791246b91ad3ddfdb484df3
 }
 
 double PIDControllerUpdate(PIDController *pid, double distMeasure, double PWMPeriod, double BASE_WIDTH){
 	double error = distMeasure - pid->targetRDist;
-	if(abs(error) <20){
-		double PWMPeriod = PWMGenPeriodGet(PWM1_BASE,PWM_GEN_3);
-
+	if(abs(error) <15){
 		pid-> Port = pid->Kp * error;
-		pid->Integral = pid->Integral + pid->Ki *(error + pid->prevError);
+		pid->Integral = pid->Ki *(error + pid->prevError);
 		if(pid->Integral > pid ->iMax){
 			pid->Integral = pid->iMax;
 		}
