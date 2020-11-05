@@ -186,6 +186,7 @@ void PIDControllerLoop(void){
 		double distRMeasured = readRDistSensor();
 		double distFMeasured = readFDistSensor();
 <<<<<<< HEAD
+<<<<<<< HEAD
 		//If robot have just finished rotating right
 		if(rightState == 1){
 			//Check if sensor can detect right wall. If it does not, move a short amount of distance forward
@@ -205,6 +206,8 @@ void PIDControllerLoop(void){
 			PWMOutputState(PWM1_BASE, PWM_OUT_5_BIT | PWM_OUT_6_BIT, true);
 			delay(40);
 =======
+=======
+>>>>>>> c50511877b6af8b49791246b91ad3ddfdb484df3
 		//Will create a state array later
 		if(distRMeasured > 15){	//20
 >>>>>>> c50511877b6af8b49791246b91ad3ddfdb484df3

@@ -30,7 +30,11 @@ void InitPIDController(PIDController *pid){
 	pid->prevMeasurement = 0;
 	pid->Correction = 0;
 <<<<<<< HEAD
+<<<<<<< HEAD
 	pid->targetRDist = 8.5;	//10cm
+=======
+	pid->targetRDist = 9.0;	//10cm
+>>>>>>> c50511877b6af8b49791246b91ad3ddfdb484df3
 =======
 	pid->targetRDist = 9.0;	//10cm
 >>>>>>> c50511877b6af8b49791246b91ad3ddfdb484df3
