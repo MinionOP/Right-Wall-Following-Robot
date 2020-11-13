@@ -180,6 +180,8 @@ main.obj: C:/ti/tirtos_tivac_2_16_01_14/products/bios_6_45_02_31/packages/ti/sys
 main.obj: C:/ti/tirtos_tivac_2_16_01_14/products/bios_6_45_02_31/packages/ti/sysbios/knl/Semaphore.h
 main.obj: C:/ti/tirtos_tivac_2_16_01_14/products/bios_6_45_02_31/packages/ti/sysbios/knl/Task.h
 main.obj: C:/ti/tirtos_tivac_2_16_01_14/products/bios_6_45_02_31/packages/ti/sysbios/knl/package/Task_SupportProxy.h
+main.obj: C:/ti/tirtos_tivac_2_16_01_14/products/bios_6_45_02_31/packages/ti/sysbios/knl/Task.h
+main.obj: C:/ti/tirtos_tivac_2_16_01_14/products/bios_6_45_02_31/packages/ti/sysbios/knl/Semaphore.h
 main.obj: C:/ti/xdctools_3_32_00_06_core/packages/xdc/runtime/Log.h
 main.obj: C:/ti/xdctools_3_32_00_06_core/packages/xdc/runtime/System.h
 main.obj: C:/ti/xdctools_3_32_00_06_core/packages/xdc/runtime/Types.h
@@ -400,6 +402,8 @@ C:/ti/tirtos_tivac_2_16_01_14/products/bios_6_45_02_31/packages/ti/sysbios/famil
 C:/ti/tirtos_tivac_2_16_01_14/products/bios_6_45_02_31/packages/ti/sysbios/knl/Semaphore.h: 
 C:/ti/tirtos_tivac_2_16_01_14/products/bios_6_45_02_31/packages/ti/sysbios/knl/Task.h: 
 C:/ti/tirtos_tivac_2_16_01_14/products/bios_6_45_02_31/packages/ti/sysbios/knl/package/Task_SupportProxy.h: 
+C:/ti/tirtos_tivac_2_16_01_14/products/bios_6_45_02_31/packages/ti/sysbios/knl/Task.h: 
+C:/ti/tirtos_tivac_2_16_01_14/products/bios_6_45_02_31/packages/ti/sysbios/knl/Semaphore.h: 
 C:/ti/xdctools_3_32_00_06_core/packages/xdc/runtime/Log.h: 
 C:/ti/xdctools_3_32_00_06_core/packages/xdc/runtime/System.h: 
 C:/ti/xdctools_3_32_00_06_core/packages/xdc/runtime/Types.h: 

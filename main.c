@@ -1,5 +1,5 @@
 //Team 9: Charle Nguyen, Edward Sotelo, Josh McHenry
-//Milestone 7
+//Milestone 8
 
 #include <xdc/std.h>
 #include <ti/sysbios/BIOS.h>
@@ -41,6 +41,7 @@ void rWheelForward(void);
 void rWheelReverse(void);
 void lWheelForward(void);
 void lWheelReverse(void);
+void LightSensor(void);
 
 void delay(uint32_t wait);
 void rightTurn(void);
@@ -50,6 +51,7 @@ void InitHardware(void);
 
 void TimerInt(void);						//Timer interrupt
 void PIDControllerLoop(void);				//Task
+
 
 
 PIDController pidS;
@@ -62,7 +64,6 @@ void main(void)
 	BIOS_start();
 
 }
-
 
 
 void InitHardware(void){
@@ -132,43 +133,66 @@ void InitHardware(void){
 }
 
 //---------------------------------------------------------------------------------------------
+//Current width for left and right motor
 double currentWidthL =  BASE_WIDTH;
 double currentWidthR =  BASE_WIDTH;
+
+//If robot is currently attempting to turn right
 uint32_t rightState = 0;
-int delayStatus = 0;
+
+//If delay has been called
+uint8_t delayStatus = 0;
+
+//Will be true if robot crosses over line
+uint8_t overLine = 0;
+
+//Black or white crossline
+char colorLine = 'b';			//w = white and b = black
 volatile uint32_t time = 0;
 
 
 //Timer interrupt. Interrupt number: 39
 void TimerInt(void){
-	TimerIntClear(TIMER2_BASE, TIMER_TIMA_TIMEOUT); 								//Clear timer interrupt
+	TimerIntClear(TIMER2_BASE, TIMER_TIMA_TIMEOUT); 									//Clear timer interrupt
+	//increment time
 	time = time+1;
-	if(delayStatus == 0 && time%50 == 0){
+	//Check if delay function is currently running or if the line has been crossed
+	if(delayStatus == 0 && overLine == 0){
 		time = time%1000;
-		Semaphore_post(PIDSem);														//Post semaphore, pend semaphore in PIDControllerLoop
+		//Post to lightSensor every 15ms
+		if(time%15 == 0){
+			Semaphore_post(LightSem);
+		}
+		//Post to PIDController every 50ms
+		if(time%50 == 0){
+			Semaphore_post(PIDSem);														//Post semaphore, pend semaphore in PIDControllerLoop
+		}
 	}
 }
 
 
-void delay(uint32_t wait){	//1ms
+//---------------------------------------------------------------------------------------------
+void delay(uint32_t wait){			//1ms
 	delayStatus = 1;				//Set delayStatus = 1, so interrupt will not post semaphore
 	uint32_t initial = time;
 	while(time - initial <wait);
 	delayStatus= 0;
 }
 
-
-
 void rightTurn(void){
+	//Attempting right turn, set rightState to true
 	rightState = 1;
+	//Reset right motor duty cycle
 	setRDutyCycle(BASE_WIDTH);
+	//Right wheel reverse for a short amount of time
 	rWheelReverse();
 	delay(37);
+	//Return right wheel direction back to forward
 	rWheelForward();
+	//Turn both wheels off. PIDControllerLoop will check if there's a right wall
 	PWMOutputState(PWM1_BASE, PWM_OUT_5_BIT | PWM_OUT_6_BIT, false);
 
 }
-
 
 void uTurn(void){
 	setRDutyCycle(BASE_WIDTH);
@@ -178,7 +202,7 @@ void uTurn(void){
 	PWMOutputState(PWM1_BASE, PWM_OUT_5_BIT | PWM_OUT_6_BIT, false);
 }
 
-
+//---------------------------------------------------------------------------------------------
 //Task Handle: PIDHandle
 void PIDControllerLoop(void){
 	while(1){
@@ -219,6 +243,63 @@ void PIDControllerLoop(void){
 	}
 }
 
+//---------------------------------------------------------------------------------------------
+void LightSensor(void){
+	while(1){
+		Semaphore_pend(LightSem, BIOS_WAIT_FOREVER);										//Pend semaphore
+		int counter = 0;
+		uint8_t overBlackLine = 0;
+		//Configure pin B6 as digital output
+		GPIOPinTypeGPIOOutput(GPIO_PORTB_BASE, GPIO_PIN_6);
+		//Output high to pin B6
+		GPIOPinWrite(GPIO_PORTB_BASE, GPIO_PIN_6, 0x40);
+		//Wait 1 mircosecond for capacitor to charge
+		SysCtlDelay((SysCtlClockGet()/100000)-1);
+		//Change pin B6 from digital output to digital input
+		GPIOPinTypeGPIOInput(GPIO_PORTB_BASE, GPIO_PIN_6);
+		//Measure the time it takes the capacitor to discharge, until Pin B6 read low.
+		while(GPIOPinRead(GPIO_PORTB_BASE, GPIO_PIN_6)){
+			counter++;
+			//Set max counter to 400 if white
+			if(counter >=400 && colorLine == 'w'){
+				break;
+			}
+			//Set max counter to 1500 if black
+			else if(counter >=1500 && colorLine == 'b'){
+				overBlackLine = 1;
+				break;
+			}
+		}
+		//Print value to bluetooth
+		UARTprintf("%d\n",counter);
+
+		switch(colorLine){
+		//White crosslines
+		case 'w':{
+			if(counter <200){
+				UARTprintf("Crossed White Line. END----------\n");
+				delay(100);
+				PWMOutputState(PWM1_BASE, PWM_OUT_5_BIT | PWM_OUT_6_BIT, false);
+				overLine = 1;
+				//delay(1000);
+				break;
+			}
+		}
+		//Black crosslines
+		case 'b':{
+			if(overBlackLine){
+				UARTprintf("Crossed Black Line. END----------\n");
+				delay(100);
+				PWMOutputState(PWM1_BASE, PWM_OUT_5_BIT | PWM_OUT_6_BIT, false);
+				overLine = 1;
+				//delay(1000);
+				break;
+			}
+		}
+		}
+
+	}
+}
 
 //---------------------------------------------------------------------------------------------
 //Controling duty cycle of motors
