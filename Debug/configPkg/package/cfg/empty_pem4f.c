@@ -1256,8 +1256,8 @@ __T1_ti_sysbios_knl_Task_Instance_State__stack ti_sysbios_knl_Task_Instance_Stat
 #endif
 #endif
 
-/* --> LightSensor */
-extern xdc_Void LightSensor(xdc_UArg,xdc_UArg);
+/* --> PIDControllerTask */
+extern xdc_Void PIDControllerTask(xdc_UArg,xdc_UArg);
 #ifdef __IAR_SYSTEMS_ICC__
     #pragma data_alignment=8
 #endif
@@ -1281,8 +1281,8 @@ __T1_ti_sysbios_knl_Task_Instance_State__stack ti_sysbios_knl_Task_Instance_Stat
 #endif
 #endif
 
-/* --> PIDControllerLoop */
-extern xdc_Void PIDControllerLoop(xdc_UArg,xdc_UArg);
+/* --> lightSensorTask */
+extern xdc_Void lightSensorTask(xdc_UArg,xdc_UArg);
 #ifdef __IAR_SYSTEMS_ICC__
     #pragma data_alignment=8
 #endif
@@ -1593,7 +1593,7 @@ __FAR__ const xdc_SizeT ti_sysbios_knl_Task_Module_State_terminatedQ__O = offset
  *  Define absolute path prefix for this executable's
  *  configuration generated files.
  */
-xdc__META(__ASM__, "@(#)__ASM__ = C:/Users/Charles/workspace_v6_2/Milestone7/Debug/configPkg/package/cfg/empty_pem4f");
+xdc__META(__ASM__, "@(#)__ASM__ = C:/Users/Charles/workspace_v6_2/Milestone8/Debug/configPkg/package/cfg/empty_pem4f");
 
 /*
  *  ======== __ISA__ ========
@@ -4865,7 +4865,7 @@ ti_sysbios_knl_Task_Object__ ti_sysbios_knl_Task_Object__table__V[3] = {
         (xdc_SizeT)0x200,  /* stackSize */
         ((void*)ti_sysbios_knl_Task_Instance_State_0_stack__A),  /* stack */
         0,  /* stackHeap */
-        ((xdc_Void(*)(xdc_UArg,xdc_UArg))((xdc_Fxn)LightSensor)),  /* fxn */
+        ((xdc_Void(*)(xdc_UArg,xdc_UArg))((xdc_Fxn)PIDControllerTask)),  /* fxn */
         ((xdc_UArg)(0x0)),  /* arg0 */
         ((xdc_UArg)(0x0)),  /* arg1 */
         ((xdc_Ptr)0),  /* env */
@@ -4888,7 +4888,7 @@ ti_sysbios_knl_Task_Object__ ti_sysbios_knl_Task_Object__table__V[3] = {
         (xdc_SizeT)0x200,  /* stackSize */
         ((void*)ti_sysbios_knl_Task_Instance_State_1_stack__A),  /* stack */
         0,  /* stackHeap */
-        ((xdc_Void(*)(xdc_UArg,xdc_UArg))((xdc_Fxn)PIDControllerLoop)),  /* fxn */
+        ((xdc_Void(*)(xdc_UArg,xdc_UArg))((xdc_Fxn)lightSensorTask)),  /* fxn */
         ((xdc_UArg)(0x0)),  /* arg0 */
         ((xdc_UArg)(0x0)),  /* arg1 */
         ((xdc_Ptr)0),  /* env */
@@ -12810,37 +12810,37 @@ const __T1_xdc_runtime_Text_charTab xdc_runtime_Text_charTab__A[6294] = {
     (xdc_Char)0x65,  /* [6209] */
     (xdc_Char)0x72,  /* [6210] */
     (xdc_Char)0x0,  /* [6211] */
-    (xdc_Char)0x4c,  /* [6212] */
-    (xdc_Char)0x69,  /* [6213] */
-    (xdc_Char)0x67,  /* [6214] */
-    (xdc_Char)0x68,  /* [6215] */
-    (xdc_Char)0x74,  /* [6216] */
-    (xdc_Char)0x53,  /* [6217] */
-    (xdc_Char)0x65,  /* [6218] */
-    (xdc_Char)0x6d,  /* [6219] */
-    (xdc_Char)0x0,  /* [6220] */
-    (xdc_Char)0x50,  /* [6221] */
-    (xdc_Char)0x49,  /* [6222] */
-    (xdc_Char)0x44,  /* [6223] */
+    (xdc_Char)0x50,  /* [6212] */
+    (xdc_Char)0x49,  /* [6213] */
+    (xdc_Char)0x44,  /* [6214] */
+    (xdc_Char)0x53,  /* [6215] */
+    (xdc_Char)0x65,  /* [6216] */
+    (xdc_Char)0x6d,  /* [6217] */
+    (xdc_Char)0x0,  /* [6218] */
+    (xdc_Char)0x4c,  /* [6219] */
+    (xdc_Char)0x69,  /* [6220] */
+    (xdc_Char)0x67,  /* [6221] */
+    (xdc_Char)0x68,  /* [6222] */
+    (xdc_Char)0x74,  /* [6223] */
     (xdc_Char)0x53,  /* [6224] */
     (xdc_Char)0x65,  /* [6225] */
     (xdc_Char)0x6d,  /* [6226] */
     (xdc_Char)0x0,  /* [6227] */
-    (xdc_Char)0x4c,  /* [6228] */
-    (xdc_Char)0x69,  /* [6229] */
-    (xdc_Char)0x67,  /* [6230] */
-    (xdc_Char)0x68,  /* [6231] */
-    (xdc_Char)0x74,  /* [6232] */
-    (xdc_Char)0x48,  /* [6233] */
-    (xdc_Char)0x61,  /* [6234] */
-    (xdc_Char)0x6e,  /* [6235] */
-    (xdc_Char)0x64,  /* [6236] */
-    (xdc_Char)0x6c,  /* [6237] */
-    (xdc_Char)0x65,  /* [6238] */
-    (xdc_Char)0x0,  /* [6239] */
-    (xdc_Char)0x50,  /* [6240] */
-    (xdc_Char)0x49,  /* [6241] */
-    (xdc_Char)0x44,  /* [6242] */
+    (xdc_Char)0x50,  /* [6228] */
+    (xdc_Char)0x49,  /* [6229] */
+    (xdc_Char)0x44,  /* [6230] */
+    (xdc_Char)0x48,  /* [6231] */
+    (xdc_Char)0x61,  /* [6232] */
+    (xdc_Char)0x6e,  /* [6233] */
+    (xdc_Char)0x64,  /* [6234] */
+    (xdc_Char)0x6c,  /* [6235] */
+    (xdc_Char)0x65,  /* [6236] */
+    (xdc_Char)0x0,  /* [6237] */
+    (xdc_Char)0x4c,  /* [6238] */
+    (xdc_Char)0x69,  /* [6239] */
+    (xdc_Char)0x67,  /* [6240] */
+    (xdc_Char)0x68,  /* [6241] */
+    (xdc_Char)0x74,  /* [6242] */
     (xdc_Char)0x48,  /* [6243] */
     (xdc_Char)0x61,  /* [6244] */
     (xdc_Char)0x6e,  /* [6245] */
@@ -17128,26 +17128,26 @@ const ti_sysbios_family_arm_m3_Hwi_Handle TimerIntHandle = (ti_sysbios_family_ar
     __attribute__ ((externally_visible))
 #endif
 #endif
-const ti_sysbios_knl_Semaphore_Handle LightSem = (ti_sysbios_knl_Semaphore_Handle)((ti_sysbios_knl_Semaphore_Handle)&ti_sysbios_knl_Semaphore_Object__table__V[0]);
+const ti_sysbios_knl_Semaphore_Handle PIDSem = (ti_sysbios_knl_Semaphore_Handle)((ti_sysbios_knl_Semaphore_Handle)&ti_sysbios_knl_Semaphore_Object__table__V[0]);
 
 #ifdef __GNUC__
 #ifndef __TI_COMPILER_VERSION__
     __attribute__ ((externally_visible))
 #endif
 #endif
-const ti_sysbios_knl_Task_Handle LightHandle = (ti_sysbios_knl_Task_Handle)((ti_sysbios_knl_Task_Handle)&ti_sysbios_knl_Task_Object__table__V[0]);
+const ti_sysbios_knl_Task_Handle PIDHandle = (ti_sysbios_knl_Task_Handle)((ti_sysbios_knl_Task_Handle)&ti_sysbios_knl_Task_Object__table__V[0]);
 
 #ifdef __GNUC__
 #ifndef __TI_COMPILER_VERSION__
     __attribute__ ((externally_visible))
 #endif
 #endif
-const ti_sysbios_knl_Task_Handle PIDHandle = (ti_sysbios_knl_Task_Handle)((ti_sysbios_knl_Task_Handle)&ti_sysbios_knl_Task_Object__table__V[1]);
+const ti_sysbios_knl_Semaphore_Handle LightSem = (ti_sysbios_knl_Semaphore_Handle)((ti_sysbios_knl_Semaphore_Handle)&ti_sysbios_knl_Semaphore_Object__table__V[1]);
 
 #ifdef __GNUC__
 #ifndef __TI_COMPILER_VERSION__
     __attribute__ ((externally_visible))
 #endif
 #endif
-const ti_sysbios_knl_Semaphore_Handle PIDSem = (ti_sysbios_knl_Semaphore_Handle)((ti_sysbios_knl_Semaphore_Handle)&ti_sysbios_knl_Semaphore_Object__table__V[1]);
+const ti_sysbios_knl_Task_Handle LightHandle = (ti_sysbios_knl_Task_Handle)((ti_sysbios_knl_Task_Handle)&ti_sysbios_knl_Task_Object__table__V[1]);
 

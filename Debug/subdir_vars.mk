@@ -10,14 +10,20 @@ CFG_SRCS += \
 ../empty.cfg 
 
 C_SRCS += \
+../Driver.c \
+../Utilities.c \
 ../main.c \
 C:/ti/tirtos_tivac_2_16_01_14/products/TivaWare_C_Series-2.1.1.71b/utils/uartstdio.c 
 
 OBJS += \
+./Driver.obj \
+./Utilities.obj \
 ./main.obj \
 ./uartstdio.obj 
 
 C_DEPS += \
+./Driver.d \
+./Utilities.d \
 ./main.d \
 ./uartstdio.d 
 
@@ -42,14 +48,20 @@ GEN_MISC_DIRS__QUOTED += \
 "configPkg\" 
 
 C_DEPS__QUOTED += \
+"Driver.d" \
+"Utilities.d" \
 "main.d" \
 "uartstdio.d" 
 
 OBJS__QUOTED += \
+"Driver.obj" \
+"Utilities.obj" \
 "main.obj" \
 "uartstdio.obj" 
 
 C_SRCS__QUOTED += \
+"../Driver.c" \
+"../Utilities.c" \
 "../main.c" \
 "C:/ti/tirtos_tivac_2_16_01_14/products/TivaWare_C_Series-2.1.1.71b/utils/uartstdio.c" 
 

@@ -11,16 +11,16 @@
 extern const ti_sysbios_family_arm_m3_Hwi_Handle TimerIntHandle;
 
 #include <ti/sysbios/knl/Semaphore.h>
-extern const ti_sysbios_knl_Semaphore_Handle LightSem;
-
-#include <ti/sysbios/knl/Task.h>
-extern const ti_sysbios_knl_Task_Handle LightHandle;
+extern const ti_sysbios_knl_Semaphore_Handle PIDSem;
 
 #include <ti/sysbios/knl/Task.h>
 extern const ti_sysbios_knl_Task_Handle PIDHandle;
 
 #include <ti/sysbios/knl/Semaphore.h>
-extern const ti_sysbios_knl_Semaphore_Handle PIDSem;
+extern const ti_sysbios_knl_Semaphore_Handle LightSem;
+
+#include <ti/sysbios/knl/Task.h>
+extern const ti_sysbios_knl_Task_Handle LightHandle;
 
 extern int xdc_runtime_Startup__EXECFXN__C;
 
