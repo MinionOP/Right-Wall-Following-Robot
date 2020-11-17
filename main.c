@@ -180,7 +180,6 @@ void AcquireDataTask(void){
 		currentSample++;
 		if(currentSample == 20){
 			currentSample = 0;
-			swapBuffer();
 			Semaphore_post(TxDataSem);
 		}
 	}
@@ -189,8 +188,12 @@ void AcquireDataTask(void){
 void TxDataTask(void){
 	while(1){
 		Semaphore_pend(TxDataSem,BIOS_WAIT_FOREVER);
-		covertDoubleToString();
+		swapBuffer();
+		for(int i=0;i<20;i++){
+			covertDemToString(activeBuffer[i]);
+			print
 
+		}
 	}
 }
 
@@ -206,8 +209,6 @@ void swapBuffer(void){
 		backBuffer = Buffer2;
 	}
 }
-
-
 
 
 
