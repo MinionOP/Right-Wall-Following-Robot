@@ -25,7 +25,7 @@ typedef struct{
 
 
 
-void InitPIDController(PIDController *pid, double _PWMPeriod, double _baseWidth){
+void InitPID(PIDController *pid, double _PWMPeriod, double _baseWidth){
 	pid->Kp = 1.0;
 	pid->Ki = 0.1;
 	pid->Kd = 5.0;
@@ -39,7 +39,7 @@ void InitPIDController(PIDController *pid, double _PWMPeriod, double _baseWidth)
     pid->PWMPeriod = _PWMPeriod;
 }
 
-double PIDControllerUpdate(PIDController *pid, double distMeasure){
+double PIDUpdate(PIDController *pid, double distMeasure){
 	double error = distMeasure - pid->targetRDist;
 	if(abs(error) <15){
 		pid-> Port = pid->Kp * error;

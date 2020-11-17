@@ -2,7 +2,7 @@
 #define UTILITIES_H_
 
 #define BASE_WIDTH 300						//75% duty cycle
-#define BASE_DUTY 75						//75% duty cycle
+#define BASE_DUTY (BASE_WIDTH/PERIOD) * 100		//75% duty cycle
 #define PERIOD 400
 
 //read Front Distance Sensor
