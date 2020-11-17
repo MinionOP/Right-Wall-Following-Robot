@@ -20,7 +20,10 @@ void wheelPower(uint32_t wheelNum, char* power);
 void rightTurn(void);
 void uTurn(void);
 
+//Light sensor
 uint8_t lightSensor(char colorLine);
 
+//Print to console
+void print(char* string);
 
 #endif /* UTILITIES_H_ */
