@@ -212,3 +212,11 @@ void uTurn(void){
 	wheelDir(0,1);
 	wheelPower(2,"off");
 }
+
+//---------------------------------------------------------------------------------------------
+void printToConsole(char* string){
+	while(*string){
+		UARTCharPut(UART0_BASE, *string);
+		string = string + 1;
+	}
+}
