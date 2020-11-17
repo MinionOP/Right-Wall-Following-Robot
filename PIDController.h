@@ -63,5 +63,9 @@ double PIDUpdate(PIDController *pid, double distMeasure){
 
 }
 
+double getPrevError(PIDController *pid){
+	return pid->prevError;
+}
+
 
 #endif /* PIDCONTROLLER_H_ */
