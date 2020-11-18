@@ -54,6 +54,8 @@ void AcquireDataTask(void);
 void TxDataTask(void);
 void swapBuffer(void);
 
+uint8_t lightSensor(char colorLine, int currentStatus);
+
 
 PIDController pidS;
 PIDController* pid = &pidS;
@@ -61,7 +63,6 @@ PIDController* pid = &pidS;
 void main(void)
 {
 	InitPID(pid, PERIOD, BASE_WIDTH);
-	//Initialize hardware
 	InitHardware();
 	BIOS_start();
 
@@ -81,6 +82,7 @@ uint8_t overLine = 0;
 char colorLine = 'b';			//w = white and b = black
 volatile uint32_t time = 0;
 
+uint8_t dataCollectStatus = 0;
 
 //Timer interrupt. Interrupt number: 39
 void TimerInt(void){
@@ -88,6 +90,7 @@ void TimerInt(void){
 	//increment time
 	time = time+1;
 	//Check if delay function is currently running or if the line has been crossed
+
 	if(delayStatus == 0 && overLine == 0){
 		time = time%1000;
 		//Post to lightSensor every 15ms
@@ -98,8 +101,8 @@ void TimerInt(void){
 		if(time%50 == 0){
 			Semaphore_post(PIDSem);														//Post semaphore, pend semaphore in PIDControllerLoop
 		}
-		if(time%100 == 0){
-			Semaphore_post(AcquireDataSem);
+		if(time%100 == 0 && dataCollectStatus == 1){
+			//Semaphore_post(AcquireDataSem);
 		}
 	}
 }
@@ -119,39 +122,9 @@ void delay(uint32_t wait){	//1ms
 void PIDTask(void){
 	while(1){
 		Semaphore_pend(PIDSem,BIOS_WAIT_FOREVER);										//Pend semaphore
-		double distRMeasured = readRight();
-		double distFMeasured = readFront();
-		//If robot have just finished rotating right
-		if(rightState == 1){
-			//Check if sensor can detect right wall. If it does not, move a short amount of distance forward
-			if(distRMeasured > 15){
-				wheelPower(2,"on");
-				delay(25);
-				wheelPower(2,"off");
-			}
-			//Right wall detect, set rightState to 0.
-			else{
-				wheelPower(2,"on");
-				rightState = 0;
-			}
-		}
-		//If robot does not detect right wall, rotate right
-		if(distRMeasured > 15 && rightState == 0){	//20
-			wheelPower(2,"on");
-			delay(40);
-			rightTurn();
-		}
-		//If dead end is detected, make a u turn
-		else if(distRMeasured <15 && distFMeasured < 15){
-			wheelPower(2,"on");
-			uTurn();
-		}
-		//Drive forward using pid
-		else if(distRMeasured > 0 && rightState == 0){
-			wheelPower(2,"on");
-			int Correction = PIDUpdate(pid, readRight());
-			wheelDuty(BASE_DUTY, Correction);
-		}
+		int Correction = PIDUpdate(pid, readRight());
+		wheelDuty(BASE_DUTY, Correction);
+
 	}
 }
 
@@ -159,27 +132,36 @@ void PIDTask(void){
 void lightSensorTask(void){
 	while(1){
 		Semaphore_pend(LightSem, BIOS_WAIT_FOREVER);										//Pend semaphore
-		overLine = lightSensor(colorLine);
+		uint8_t temp = 0;
+		temp = lightSensor(colorLine, dataCollectStatus);
+		if(dataCollectStatus != temp){
+			dataCollectStatus = 1;
+		}
+		else{
+			dataCollectStatus = 0;
+		}
 	}
 }
 
 //---------------------------------------------------------------------------------------------
-volatile uint32_t Buffer1[20];
-volatile uint32_t Buffer2[20];
+double Buffer1[20];
+double Buffer2[20];
 
-volatile uint32_t *activeBuffer = Buffer1;
-volatile uint32_t *backBuffer = Buffer2;
-volatile uint8_t bufferPtr = 0;
+double *activeBuffer = Buffer1;
+double *backBuffer = Buffer2;
+uint8_t bufferPtr = 0;
 
-uint8_t currentSample = 0;
+int currentSample = 0;
 
 void AcquireDataTask(void){
 	while(1){
-		Semaphore_pend(AcquiredDataSem,BIOS_WAIT_FOREVER);
-		backBuffer[currentSample] = getPrevError();
+		Semaphore_pend(AcquireDataSem,BIOS_WAIT_FOREVER);
+		GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_3, 0x8);
+		backBuffer[currentSample] = getPrevError(pid);
 		currentSample++;
 		if(currentSample == 20){
 			currentSample = 0;
+			GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_3, 0x0);
 			Semaphore_post(TxDataSem);
 		}
 	}
@@ -189,11 +171,17 @@ void TxDataTask(void){
 	while(1){
 		Semaphore_pend(TxDataSem,BIOS_WAIT_FOREVER);
 		swapBuffer();
-		for(int i=0;i<20;i++){
-			covertDemToString(activeBuffer[i]);
-			print
+		GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_2, 0x4);
+		UARTprintf("-------Transmission Start-------\n");
+		int i;
+		char str[8];
+		for(i=0;i<20;i++){
+			sprintf(str,"%.2f",activeBuffer[i]);
+			UARTprintf("%s\n",str);
 
 		}
+		UARTprintf("-------Transmission End-------\n");
+		GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_2, 0x0);
 	}
 }
 
@@ -209,8 +197,6 @@ void swapBuffer(void){
 		backBuffer = Buffer2;
 	}
 }
-
-
 
 
 

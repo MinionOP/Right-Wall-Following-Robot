@@ -51,45 +51,46 @@ double readRight(void){
 
 
 //---------------------------------------------------------------------------------------------
-uint8_t lightSensor(char colorLine){
+
+uint8_t lightSensor(char colorLine, int currentStatus){
 	int counter = 0;
 	uint8_t overBlackLine = 0;
     uint8_t overLine = 0;
 
-	//Configure pin B6 as digital output
-	GPIOPinTypeGPIOOutput(GPIO_PORTB_BASE, GPIO_PIN_6);
-	//Output high to pin B6
-	GPIOPinWrite(GPIO_PORTB_BASE, GPIO_PIN_6, 0x40);
-	//Wait 1 mircosecond for capacitor to charge
-	SysCtlDelay((SysCtlClockGet()/100000)-1);
-	//Change pin B6 from digital output to digital input
-	GPIOPinTypeGPIOInput(GPIO_PORTB_BASE, GPIO_PIN_6);
-	//Measure the time it takes the capacitor to discharge, until Pin B6 read low.
-	while(GPIOPinRead(GPIO_PORTB_BASE, GPIO_PIN_6)){
-		counter++;
-		//Set max counter to 400 if white
-		if(counter >=400 && colorLine == 'w'){
-			break;
-		}
-		//Set max counter to 1500 if black
-		else if(counter >=1500 && colorLine == 'b'){
-			overBlackLine = 1;
-			break;
-		}
-	}
-	//Print value to bluetooth
-	UARTprintf("%d\n",counter);
+    int temp;
+    //Configure pin B6 as digital output
+    GPIOPinTypeGPIOOutput(GPIO_PORTB_BASE, GPIO_PIN_6);
+    //Output high to pin B6
+    GPIOPinWrite(GPIO_PORTB_BASE, GPIO_PIN_6, 0x40);
+    //Wait 1 mircosecond for capacitor to charge
+    SysCtlDelay(100);
+    //Change pin B6 from digital output to digital input
+    GPIOPinTypeGPIOInput(GPIO_PORTB_BASE, GPIO_PIN_6);
+    //Measure the time it takes the capacitor to discharge, until Pin B6 read low.
+    while(GPIOPinRead(GPIO_PORTB_BASE, GPIO_PIN_6)>0){
+    	counter++;
+    	//Set max counter to 400 if white
+    	/*if(counter >=400 && colorLine == 'w'){
+    				break;
+    			}
+    			//Set max counter to 1500 if black
+    			else if(counter >=1500 && colorLine == 'b'){
+    				overBlackLine = 1;
+    				break;
+    			}*/
+    }
+    //Print value to bluetooth
+    temp = GPIOPinRead(GPIO_PORTB_BASE, GPIO_PIN_6);
+    UARTprintf("%d\n",counter);
 
 	switch(colorLine){
 	//White crosslines
 	case 'w':{
 		if(counter <200){
-			UARTprintf("Crossed White Line. END----------\n");
-			//delay(100);
+			UARTprintf("Crossed White Line\n");
             SysCtlDelay(SysCtlClockGet());
-			PWMOutputState(PWM1_BASE, PWM_OUT_5_BIT | PWM_OUT_6_BIT, false);
-			//overLine = 1;
-			//delay(1000);
+			//PWMOutputState(PWM1_BASE, PWM_OUT_5_BIT | PWM_OUT_6_BIT, false);
+			overLine = 1;
             SysCtlDelay(SysCtlClockGet()*5);
 			break;
 		}
@@ -97,17 +98,19 @@ uint8_t lightSensor(char colorLine){
 	//Black crosslines
 	case 'b':{
 		if(overBlackLine){
-			UARTprintf("Crossed Black Line. END----------\n");
-			//delay(100);
-            SysCtlDelay(SysCtlClockGet());
-			PWMOutputState(PWM1_BASE, PWM_OUT_5_BIT | PWM_OUT_6_BIT, false);
-			//overLine = 1;
-			//delay(1000);
-            SysCtlDelay(SysCtlClockGet()*5);
+			UARTprintf("Crossed Black Line\n");
+			if(currentStatus == 1){
+	            SysCtlDelay(SysCtlClockGet());
+				PWMOutputState(PWM1_BASE, PWM_OUT_5_BIT | PWM_OUT_6_BIT, false);
+	            SysCtlDelay(SysCtlClockGet()*5);
+			}
+			overLine = 1;
 			break;
 		}
 	}
 	}
+
+
 
     return overLine;
 }
@@ -118,18 +121,25 @@ uint8_t lightSensor(char colorLine){
 //Controling duty cycle of motors
 void wheelDuty(double lDuty, double rDuty){
 	uint32_t currentWidthL = (lDuty/100) * PERIOD;
-	PWMPulseWidthSet(PWM1_BASE, PWM_OUT_5, currentWidthL);					//Set duty cycle for left motor
+	PWMPulseWidthSet(PWM1_BASE, PWM_OUT_1, currentWidthL);					//Set duty cycle for left motor
 
 	uint32_t currentWidthR = (rDuty/100) * PERIOD;
-	PWMPulseWidthSet(PWM1_BASE, PWM_OUT_6, currentWidthR);					//Set duty cycle for right motor
+	PWMPulseWidthSet(PWM1_BASE, PWM_OUT_2, currentWidthR);					//Set duty cycle for right motor
 }
 
 //---------------------------------------------------------------------------------------------
-//GPIOF pin 4 = Right Wheel Phase
-//GPIOF pin 2 = Right Wheel PWM (M1PWM6)
+//M1PWM2 Module 1 PWM Generator 1	Pin A6 Right
+//PWM_OUT_1_BIT Left
+//PWM_OUT_2_BIT Right
 
-//GPIOF pin 3 = Left Wheel Phase
-//GPIOF pin 1 = Left Wheel PWM (M1PWM5)
+
+//GPIOD pin 0 = Left Wheel Dir
+//GPIOD pin 1 = Left Wheel PWM (M1PWM1)
+
+//GPIOD pin 2 = Right Wheel Dir
+//GPIOA pin 6 = Right Wheel PWM (M1PWM2)
+
+
 
 //wheelNum(0) = left, (1) = right, (2) = both
 //dir(0) = reverse, dir(1) = forward
@@ -143,10 +153,10 @@ void wheelDir(uint32_t wheelNum, uint32_t dir){
 	switch(wheelNum){
 	case 0:{
 		if(dir == 1){
-			GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_3, 0x8);
+			GPIOPinWrite(GPIO_PORTD_BASE, GPIO_PIN_0, 0x1);
 		}
 		else{
-			GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_3, 0x0);
+			GPIOPinWrite(GPIO_PORTD_BASE, GPIO_PIN_0, 0x0);
 		}
 		if(!bothWheelStatus){
 			break;
@@ -154,10 +164,10 @@ void wheelDir(uint32_t wheelNum, uint32_t dir){
 	}
 	case 1:{
 		if(dir == 1){
-			GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_4, 0x10);
+			GPIOPinWrite(GPIO_PORTD_BASE, GPIO_PIN_2, 0x4);
 		}
 		else{
-			GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_4, 0x0);
+			GPIOPinWrite(GPIO_PORTD_BASE, GPIO_PIN_2, 0x0);
 		}
 		break;
 	}
@@ -176,13 +186,13 @@ void wheelPower(uint32_t wheelNum, char* power){
 	}
 	switch(wheelNum){
 	case 0:{
-		PWMOutputState(PWM1_BASE, PWM_OUT_5_BIT, status);
+		PWMOutputState(PWM1_BASE, PWM_OUT_1_BIT, status);
 	}
 	case 1:{
-		PWMOutputState(PWM1_BASE, PWM_OUT_6_BIT, status);
+		PWMOutputState(PWM1_BASE, PWM_OUT_2_BIT, status);
 	}
 	case 2:{
-		PWMOutputState(PWM1_BASE, PWM_OUT_5_BIT | PWM_OUT_6_BIT, status);
+		PWMOutputState(PWM1_BASE, PWM_OUT_1_BIT | PWM_OUT_2_BIT, status);
 	}
 }
 }
@@ -197,7 +207,7 @@ void rightTurn(void){
 	wheelDuty(1,BASE_DUTY);
 	//Right wheel reverse for a short amount of time
 	wheelDir(1,0);
-	delay(37);
+//	delay(37);
 	//Return right wheel direction back to forward
 	wheelDir(1,1);
 	//Turn both wheels off. PIDControllerLoop will check if there's a right wall
@@ -208,15 +218,11 @@ void rightTurn(void){
 void uTurn(void){
 	wheelDuty(1,BASE_DUTY);
 	wheelDir(0,0);
-	delay(75);
+	//delay(75);
 	wheelDir(0,1);
 	wheelPower(2,"off");
 }
 
 //---------------------------------------------------------------------------------------------
-void printToConsole(char* string){
-	while(*string){
-		UARTCharPut(UART0_BASE, *string);
-		string = string + 1;
-	}
-}
+
+
