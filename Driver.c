@@ -26,6 +26,7 @@
 
 void InitHardware(void){
 	InitBluetooth();
+	UARTprintf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n------------------------------------------------\n");
 	UARTprintf("Bluetooth Connected\n");
 	InitMotors();
 	UARTprintf("Motor Initialized\n");
@@ -33,6 +34,8 @@ void InitHardware(void){
 	UARTprintf("ADC Initialized\n");
 	InitTimer();
 	UARTprintf("Timer Initialized\n");
+	UARTprintf("------------------------------------------------\n");
+
 
 
 }
@@ -64,8 +67,8 @@ void InitMotors(void){
 	PWMPulseWidthSet(PWM1_BASE, PWM_OUT_2, BASE_WIDTH);
 
 
-	//PWMGenEnable(PWM1_BASE, PWM_GEN_0);												//Left Wheel
-	//PWMGenEnable(PWM1_BASE, PWM_GEN_1);												//Right Wheel
+	PWMGenEnable(PWM1_BASE, PWM_GEN_0);												//Left Wheel
+	PWMGenEnable(PWM1_BASE, PWM_GEN_1);												//Right Wheel
 
 	PWMOutputState(PWM1_BASE, PWM_OUT_1_BIT | PWM_OUT_2_BIT, true);					//Enable signal
 }
@@ -96,6 +99,10 @@ void InitAnalog(void){
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF);									//Enable GPIOF Peripheral
 	while(!(SysCtlPeripheralReady(SYSCTL_PERIPH_GPIOF)));							//Wait until GPIOF is ready
 	GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE,GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3);		//LED
+
+	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);									//Enable GPIOE Peripheral
+	while(!(SysCtlPeripheralReady(SYSCTL_PERIPH_GPIOE)));							//Wait until GPIOE is ready
+	GPIOPinTypeGPIOOutput(GPIO_PORTE_BASE,GPIO_PIN_0);								//Light sensor output
 
 
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);									//Enable GPIOB Peripheral

@@ -37,7 +37,7 @@
 
 #define BASE_WIDTH 300
 #define PERIOD 400
-#define BASE_DUTY (BASE_WIDTH/PERIOD) * 100		//75% duty cycle
+#define BASE_DUTY 75	//75% duty cycle
 
 enum state {stopS, forwardS, rightS, leftS};
 
@@ -54,7 +54,6 @@ void AcquireDataTask(void);
 void TxDataTask(void);
 void swapBuffer(void);
 
-uint8_t lightSensor(char colorLine, int currentStatus);
 
 
 PIDController pidS;
@@ -79,30 +78,35 @@ uint8_t delayStatus = 0;
 uint8_t overLine = 0;
 
 //Black or white crossline
-char colorLine = 'b';			//w = white and b = black
+//'w' = white and 'b' = black
+char colorLine = 'b';
 volatile uint32_t time = 0;
 
 uint8_t dataCollectStatus = 0;
 
 //Timer interrupt. Interrupt number: 39
 void TimerInt(void){
-	TimerIntClear(TIMER2_BASE, TIMER_TIMA_TIMEOUT); 									//Clear timer interrupt
+	//Clear timer interrupt
+	TimerIntClear(TIMER2_BASE, TIMER_TIMA_TIMEOUT);
 	//increment time
 	time = time+1;
 	//Check if delay function is currently running or if the line has been crossed
 
-	if(delayStatus == 0 && overLine == 0){
+	if(delayStatus == 0 && overLine <2){
 		time = time%1000;
-		//Post to lightSensor every 15ms
-		if(time%15 == 0){
+
+		//Post to lightSensor
+		if(time%125 == 0){
 			Semaphore_post(LightSem);
 		}
 		//Post to PIDController every 50ms
 		if(time%50 == 0){
-			Semaphore_post(PIDSem);														//Post semaphore, pend semaphore in PIDControllerLoop
+			//Post semaphore, pend semaphore in PIDControllerLoop
+			Semaphore_post(PIDSem);
+
 		}
 		if(time%100 == 0 && dataCollectStatus == 1){
-			//Semaphore_post(AcquireDataSem);
+			Semaphore_post(AcquireDataSem);
 		}
 	}
 }
@@ -110,7 +114,8 @@ void TimerInt(void){
 
 //---------------------------------------------------------------------------------------------
 void delay(uint32_t wait){	//1ms
-	delayStatus = 1;				//Set delayStatus = 1, so interrupt will not post semaphore
+	//Set delayStatus = 1, so interrupt will not post semaphore
+	delayStatus = 1;
 	uint32_t initial = time;
 	while(time - initial <wait);
 	delayStatus= 0;
@@ -121,8 +126,10 @@ void delay(uint32_t wait){	//1ms
 //Task Handle: PIDHandle
 void PIDTask(void){
 	while(1){
-		Semaphore_pend(PIDSem,BIOS_WAIT_FOREVER);										//Pend semaphore
-		int Correction = PIDUpdate(pid, readRight());
+		//Pend semaphore
+		Semaphore_pend(PIDSem,BIOS_WAIT_FOREVER);
+		double distMeasure = readRight();
+		double Correction = PIDUpdate(pid, distMeasure);
 		wheelDuty(BASE_DUTY, Correction);
 
 	}
@@ -131,11 +138,22 @@ void PIDTask(void){
 //---------------------------------------------------------------------------------------------
 void lightSensorTask(void){
 	while(1){
-		Semaphore_pend(LightSem, BIOS_WAIT_FOREVER);										//Pend semaphore
+		//Pend semaphore
+		Semaphore_pend(LightSem, BIOS_WAIT_FOREVER);
 		uint8_t temp = 0;
 		temp = lightSensor(colorLine, dataCollectStatus);
-		if(dataCollectStatus != temp){
+		//Number of times robot cross over line
+		overLine+=temp;
+		//Check whether the robot should start or stop collecting data
+		if(dataCollectStatus == 0 && temp == 1 || dataCollectStatus == 1 && temp == 0){
 			dataCollectStatus = 1;
+		}
+		//Will clear remaining data once the robot have cross over the 2nd line
+		else if(dataCollectStatus == 1 && temp == 1){
+			//Set dataStatus equal to 0. Will stop the timer interrupt from posting to DataAcquire semaphore
+			dataCollectStatus = 0;
+			//Clear remaining Data
+			Semaphore_post(TxDataSem);
 		}
 		else{
 			dataCollectStatus = 0;
@@ -152,16 +170,22 @@ double *backBuffer = Buffer2;
 uint8_t bufferPtr = 0;
 
 int currentSample = 0;
+int currentSample2 = 0;
+
+
 
 void AcquireDataTask(void){
 	while(1){
 		Semaphore_pend(AcquireDataSem,BIOS_WAIT_FOREVER);
-		GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_3, 0x8);
+		GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_2, 0x4);
 		backBuffer[currentSample] = getPrevError(pid);
+		//increment position
 		currentSample++;
+		currentSample2++;
+		//Check if there's 20 data in the array
 		if(currentSample == 20){
 			currentSample = 0;
-			GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_3, 0x0);
+			GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_2, 0x0);
 			Semaphore_post(TxDataSem);
 		}
 	}
@@ -170,18 +194,37 @@ void AcquireDataTask(void){
 void TxDataTask(void){
 	while(1){
 		Semaphore_pend(TxDataSem,BIOS_WAIT_FOREVER);
-		swapBuffer();
-		GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_2, 0x4);
-		UARTprintf("-------Transmission Start-------\n");
-		int i;
-		char str[8];
-		for(i=0;i<20;i++){
-			sprintf(str,"%.2f",activeBuffer[i]);
-			UARTprintf("%s\n",str);
+		currentSample2%=21;
+		//Check whether 2nd black line had been crossed
+		if(currentSample2 == 20){
+			//Swap buffer
+			swapBuffer();
+			//Turn on green LED
+			GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_3, 0x8);
+			UARTprintf("-------Transmission Start-------\n");
 
 		}
+		else{
+			//2nd line has been crossed
+			//Turn off blue led and turn on green led
+			GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_2, 0x0);
+			GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_3, 0x8);
+			UARTprintf("-------Remaining Data-------\n");
+		}
+
+		int i;
+		char str[8];
+		//Outputting data to pc
+		for(i=0;i<currentSample2;i++){
+			sprintf(str,"%.2f",activeBuffer[i]);
+			UARTprintf("%s ",str);
+
+		}
+		UARTprintf("\n");
+		currentSample2 = 0;
 		UARTprintf("-------Transmission End-------\n");
-		GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_2, 0x0);
+		//Turn off green led
+		GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_3, 0x0);
 	}
 }
 

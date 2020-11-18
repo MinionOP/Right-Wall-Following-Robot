@@ -26,9 +26,9 @@ typedef struct{
 
 
 void InitPID(PIDController *pid, double _PWMPeriod, double _baseWidth){
-	pid->Kp = 1.0;
+	pid->Kp = 5.0;
 	pid->Ki = 0.1;
-	pid->Kd = 5.0;
+	pid->Kd = 8.0;
 	pid->iMax = 3;
 	pid->iMin = -3;
 	pid->prevError = 0;
@@ -58,9 +58,8 @@ double PIDUpdate(PIDController *pid, double distMeasure){
 			pid->Correction = pid->PWMPeriod - pid->baseWidth;
 		}
 	}
-	int newWidth = (pid->baseWidth - (pid->Correction * pid->PWMPeriod)/100);
-	return (newWidth/pid->PWMPeriod)*100;
-
+	double newDutyCycle = ((pid->baseWidth - pid->Correction)/ (pid->PWMPeriod))*100;
+	return newDutyCycle;
 }
 
 double getPrevError(PIDController *pid){

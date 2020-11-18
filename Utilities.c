@@ -55,43 +55,45 @@ double readRight(void){
 uint8_t lightSensor(char colorLine, int currentStatus){
 	int counter = 0;
 	uint8_t overBlackLine = 0;
-    uint8_t overLine = 0;
+	uint8_t status = 0;
 
-    int temp;
-    //Configure pin B6 as digital output
-    GPIOPinTypeGPIOOutput(GPIO_PORTB_BASE, GPIO_PIN_6);
-    //Output high to pin B6
-    GPIOPinWrite(GPIO_PORTB_BASE, GPIO_PIN_6, 0x40);
-    //Wait 1 mircosecond for capacitor to charge
-    SysCtlDelay(100);
-    //Change pin B6 from digital output to digital input
-    GPIOPinTypeGPIOInput(GPIO_PORTB_BASE, GPIO_PIN_6);
-    //Measure the time it takes the capacitor to discharge, until Pin B6 read low.
-    while(GPIOPinRead(GPIO_PORTB_BASE, GPIO_PIN_6)>0){
-    	counter++;
-    	//Set max counter to 400 if white
-    	/*if(counter >=400 && colorLine == 'w'){
-    				break;
-    			}
-    			//Set max counter to 1500 if black
-    			else if(counter >=1500 && colorLine == 'b'){
-    				overBlackLine = 1;
-    				break;
-    			}*/
-    }
-    //Print value to bluetooth
-    temp = GPIOPinRead(GPIO_PORTB_BASE, GPIO_PIN_6);
-    UARTprintf("%d\n",counter);
+	//Configure pin E0 as digital output
+	GPIOPinTypeGPIOOutput(GPIO_PORTE_BASE, GPIO_PIN_0);
+	//Output high to pin B6
+	GPIOPinWrite(GPIO_PORTE_BASE, GPIO_PIN_0, 0x1);
+	//Wait 1 mircosecond for capacitor to charge
+	SysCtlDelay((SysCtlClockGet()/100000)-1);
+	//Change pin E0 from digital output to digital input
+	GPIOPinTypeGPIOInput(GPIO_PORTE_BASE, GPIO_PIN_0);
+	//Measure the time it takes the capacitor to discharge, until Pin B6 read low.
+	while(GPIOPinRead(GPIO_PORTE_BASE, GPIO_PIN_0)>0){
+		counter++;
+		//Set max counter to 400 if white
+		if(counter >=400 && colorLine == 'w'){
+			break;
+		}
+		//Set max counter
+		else if(counter >=1090 && colorLine == 'b'){
+			overBlackLine = 1;
+			break;
+		}
+	}
+	//Print value to bluetooth
+	//UARTprintf("LS: %d\n",counter);
 
 	switch(colorLine){
 	//White crosslines
 	case 'w':{
 		if(counter <200){
 			UARTprintf("Crossed White Line\n");
-            SysCtlDelay(SysCtlClockGet());
-			//PWMOutputState(PWM1_BASE, PWM_OUT_5_BIT | PWM_OUT_6_BIT, false);
-			overLine = 1;
-            SysCtlDelay(SysCtlClockGet()*5);
+			if(currentStatus == 1){
+				SysCtlDelay(SysCtlClockGet()/5);
+				wheelPower(2, "off");
+				//SysCtlDelay(SysCtlClockGet()*3);
+				//wheelPower(2, "on");
+
+			}
+			status = 1;
 			break;
 		}
 	}
@@ -100,11 +102,12 @@ uint8_t lightSensor(char colorLine, int currentStatus){
 		if(overBlackLine){
 			UARTprintf("Crossed Black Line\n");
 			if(currentStatus == 1){
-	            SysCtlDelay(SysCtlClockGet());
-				PWMOutputState(PWM1_BASE, PWM_OUT_5_BIT | PWM_OUT_6_BIT, false);
-	            SysCtlDelay(SysCtlClockGet()*5);
+				SysCtlDelay(SysCtlClockGet()/5);
+				wheelPower(2, "off");
+				//SysCtlDelay(SysCtlClockGet()*3);
+				//wheelPower(2, "on");
 			}
-			overLine = 1;
+			status = 1;
 			break;
 		}
 	}
@@ -112,7 +115,7 @@ uint8_t lightSensor(char colorLine, int currentStatus){
 
 
 
-    return overLine;
+	return status;
 }
 
 
@@ -120,26 +123,23 @@ uint8_t lightSensor(char colorLine, int currentStatus){
 //---------------------------------------------------------------------------------------------
 //Controling duty cycle of motors
 void wheelDuty(double lDuty, double rDuty){
-	uint32_t currentWidthL = (lDuty/100) * PERIOD;
-	PWMPulseWidthSet(PWM1_BASE, PWM_OUT_1, currentWidthL);					//Set duty cycle for left motor
+	//Set duty cycle for left motor
+	double currentWidthL = (lDuty/100) * PERIOD;
+	PWMPulseWidthSet(PWM1_BASE, PWM_OUT_1, currentWidthL);
 
-	uint32_t currentWidthR = (rDuty/100) * PERIOD;
-	PWMPulseWidthSet(PWM1_BASE, PWM_OUT_2, currentWidthR);					//Set duty cycle for right motor
+	//Set duty cycle for right motor
+	double currentWidthR = (rDuty/100) * PERIOD;
+	PWMPulseWidthSet(PWM1_BASE, PWM_OUT_2, currentWidthR);
 }
 
 //---------------------------------------------------------------------------------------------
-//M1PWM2 Module 1 PWM Generator 1	Pin A6 Right
 //PWM_OUT_1_BIT Left
-//PWM_OUT_2_BIT Right
-
-
 //GPIOD pin 0 = Left Wheel Dir
 //GPIOD pin 1 = Left Wheel PWM (M1PWM1)
 
 //GPIOD pin 2 = Right Wheel Dir
 //GPIOA pin 6 = Right Wheel PWM (M1PWM2)
-
-
+//PWM_OUT_2_BIT Right
 
 //wheelNum(0) = left, (1) = right, (2) = both
 //dir(0) = reverse, dir(1) = forward

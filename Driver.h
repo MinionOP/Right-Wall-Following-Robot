@@ -3,7 +3,7 @@
 
 #define BASE_WIDTH 300
 #define PERIOD 400
-#define BASE_DUTY (BASE_WIDTH/PERIOD) * 100		//75% duty cycle
+#define BASE_DUTY 75	//75% duty cycle
 
 
 void InitHardware(void);
