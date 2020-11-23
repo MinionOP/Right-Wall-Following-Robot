@@ -11,6 +11,7 @@ GEN_CMDS__FLAG := -l"configPkg/linker.cmd"
 
 ORDERED_OBJS += \
 "./Driver.obj" \
+"./PIDController.obj" \
 "./Utilities.obj" \
 "./main.obj" \
 "./uartstdio.obj" \
@@ -159,8 +160,8 @@ Milestone8.hex: $(EXE_OUTPUTS)
 clean:
 	-$(RM) $(GEN_MISC_FILES__QUOTED)$(EXE_OUTPUTS__QUOTED)$(GEN_FILES__QUOTED)$(BIN_OUTPUTS__QUOTED)$(GEN_OPTS__QUOTED)$(GEN_CMDS__QUOTED)
 	-$(RMDIR) $(GEN_MISC_DIRS__QUOTED)
-	-$(RM) "Driver.d" "Utilities.d" "main.d" "uartstdio.d" 
-	-$(RM) "Driver.obj" "Utilities.obj" "main.obj" "uartstdio.obj" 
+	-$(RM) "Driver.d" "PIDController.d" "Utilities.d" "main.d" "uartstdio.d" 
+	-$(RM) "Driver.obj" "PIDController.obj" "Utilities.obj" "main.obj" "uartstdio.obj" 
 	-@echo 'Finished clean'
 	-@echo ' '
 

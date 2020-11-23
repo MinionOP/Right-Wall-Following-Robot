@@ -39,7 +39,7 @@
 #define PERIOD 400
 #define BASE_DUTY 75	//75% duty cycle
 
-enum state {stopS, forwardS, rightS, leftS};
+enum state_enum {FORWARD, RIGHT, LEFT};
 
 //Task
 void lightSensorTask(void);
@@ -58,11 +58,14 @@ void swapBuffer(void);
 
 PIDController pidS;
 PIDController* pid = &pidS;
+uint8_t state = FORWARD;
+
 
 void main(void)
 {
 	InitPID(pid, PERIOD, BASE_WIDTH);
 	InitHardware();
+	UARTprintf("\nForward State\n");
 	BIOS_start();
 
 }
@@ -97,7 +100,7 @@ void TimerInt(void){
 
 		//Post to lightSensor
 		if(time%125 == 0){
-			Semaphore_post(LightSem);
+			//Semaphore_post(LightSem);
 		}
 		//Post to PIDController every 50ms
 		if(time%50 == 0){
@@ -105,6 +108,7 @@ void TimerInt(void){
 			Semaphore_post(PIDSem);
 
 		}
+		//Post to AcquireData every 100ms
 		if(time%100 == 0 && dataCollectStatus == 1){
 			Semaphore_post(AcquireDataSem);
 		}
@@ -123,15 +127,67 @@ void delay(uint32_t wait){	//1ms
 
 
 //---------------------------------------------------------------------------------------------
+
 //Task Handle: PIDHandle
 void PIDTask(void){
 	while(1){
 		//Pend semaphore
-		Semaphore_pend(PIDSem,BIOS_WAIT_FOREVER);
-		double distMeasure = readRight();
-		double Correction = PIDUpdate(pid, distMeasure);
-		wheelDuty(BASE_DUTY, Correction);
+		char str[9];
+		char str2[9];
 
+
+		Semaphore_pend(PIDSem,BIOS_WAIT_FOREVER);
+		double rightWall = readRight();
+		double frontWall = readFront();
+
+		double Correction = PIDUpdate(pid, rightWall);
+
+		sprintf(str, "%.2f", frontWall);
+		sprintf(str2, "%.2f", rightWall);
+
+		UARTprintf("F: %s R: %s \n", str, str2);
+
+		//wheelDuty(BASE_DUTY, Correction);
+		switch(state){
+			case FORWARD:{
+				wheelDuty(BASE_DUTY, Correction);
+				if(rightWall > 15 && frontWall > 15){
+					//delay(100);
+					setPIDRight(pid);
+					UARTprintf("\nRight State\n");
+					state = RIGHT;
+				}
+				else if(rightWall > 15 && frontWall < 15){
+					setPIDRight(pid);
+					UARTprintf("\nRight State\n");
+					state = RIGHT;
+				}
+				else if(rightWall <15 && frontWall < 6){
+					wheelDuty(BASE_DUTY, BASE_DUTY);
+					wheelDir(0,0);
+					UARTprintf("Left State\n");
+					state = LEFT;
+				}
+				break;
+			}
+			case RIGHT:{
+				wheelDuty(BASE_DUTY, Correction);
+				if(rightWall < 9){
+					setPIDForward(pid);
+					UARTprintf("\nForward State\n");
+					state = FORWARD;
+				}
+				break;
+			}
+			case LEFT:{
+				if(rightWall < 15 && frontWall > 30){
+					UARTprintf("\nForward State\n");
+					wheelDir(0,1);
+					state = FORWARD;
+				}
+				break;
+			}
+		}
 	}
 }
 
@@ -186,6 +242,7 @@ void AcquireDataTask(void){
 		if(currentSample == 20){
 			currentSample = 0;
 			GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_2, 0x0);
+			//Post to TxData. Begin transferring data back to pc
 			Semaphore_post(TxDataSem);
 		}
 	}

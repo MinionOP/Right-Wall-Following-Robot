@@ -1238,13 +1238,13 @@ extern xdc_Void ti_sysbios_knl_Task_restore__E(xdc_UInt);
     #pragma data_alignment=8
 #endif
 /* --> ti_sysbios_knl_Task_Instance_State_0_stack__A */
-__T1_ti_sysbios_knl_Task_Instance_State__stack ti_sysbios_knl_Task_Instance_State_0_stack__A[512];
+__T1_ti_sysbios_knl_Task_Instance_State__stack ti_sysbios_knl_Task_Instance_State_0_stack__A[1000];
 #ifdef __ti__sect
     #pragma DATA_SECTION(ti_sysbios_knl_Task_Instance_State_0_stack__A, ".bss:taskStackSection");
 #endif
 #if defined(__GNUC__) && !(defined(__MACH__) && defined(__APPLE__))
 #ifndef __TI_COMPILER_VERSION__
-__T1_ti_sysbios_knl_Task_Instance_State__stack ti_sysbios_knl_Task_Instance_State_0_stack__A[512] __attribute__ ((section(".bss:taskStackSection")));
+__T1_ti_sysbios_knl_Task_Instance_State__stack ti_sysbios_knl_Task_Instance_State_0_stack__A[1000] __attribute__ ((section(".bss:taskStackSection")));
 #endif
 #endif
 #ifdef __ti__align
@@ -1252,7 +1252,7 @@ __T1_ti_sysbios_knl_Task_Instance_State__stack ti_sysbios_knl_Task_Instance_Stat
 #endif
 #ifdef __GNUC__
 #ifndef __TI_COMPILER_VERSION__
-__T1_ti_sysbios_knl_Task_Instance_State__stack ti_sysbios_knl_Task_Instance_State_0_stack__A[512] __attribute__ ((aligned(8)));
+__T1_ti_sysbios_knl_Task_Instance_State__stack ti_sysbios_knl_Task_Instance_State_0_stack__A[1000] __attribute__ ((aligned(8)));
 #endif
 #endif
 
@@ -4910,7 +4910,7 @@ __FAR__ const ti_sysbios_knl_Task_Params ti_sysbios_knl_Task_Object__PARAMS__C =
 };
 
 /* --> ti_sysbios_knl_Task_Instance_State_0_stack__A */
-__T1_ti_sysbios_knl_Task_Instance_State__stack ti_sysbios_knl_Task_Instance_State_0_stack__A[512];
+__T1_ti_sysbios_knl_Task_Instance_State__stack ti_sysbios_knl_Task_Instance_State_0_stack__A[1000];
 
 /* --> ti_sysbios_knl_Task_Instance_State_1_stack__A */
 __T1_ti_sysbios_knl_Task_Instance_State__stack ti_sysbios_knl_Task_Instance_State_1_stack__A[512];
@@ -4942,7 +4942,7 @@ ti_sysbios_knl_Task_Object__ ti_sysbios_knl_Task_Object__table__V[5] = {
         ((xdc_Ptr)0),  /* context */
         ti_sysbios_knl_Task_Mode_INACTIVE,  /* mode */
         ((ti_sysbios_knl_Task_PendElem*)0),  /* pendElem */
-        (xdc_SizeT)0x200,  /* stackSize */
+        (xdc_SizeT)0x3e8,  /* stackSize */
         ((void*)ti_sysbios_knl_Task_Instance_State_0_stack__A),  /* stack */
         0,  /* stackHeap */
         ((xdc_Void(*)(xdc_UArg,xdc_UArg))((xdc_Fxn)PIDTask)),  /* fxn */

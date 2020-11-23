@@ -198,31 +198,6 @@ void wheelPower(uint32_t wheelNum, char* power){
 }
 
 //---------------------------------------------------------------------------------------------
-void rightTurn(void){
-	//Attempting right turn, set rightState to true
 
-	//rightState = 1;
-
-	//Reset right motor duty cycle
-	wheelDuty(1,BASE_DUTY);
-	//Right wheel reverse for a short amount of time
-	wheelDir(1,0);
-//	delay(37);
-	//Return right wheel direction back to forward
-	wheelDir(1,1);
-	//Turn both wheels off. PIDControllerLoop will check if there's a right wall
-	wheelPower(2,"off");
-}
-
-
-void uTurn(void){
-	wheelDuty(1,BASE_DUTY);
-	wheelDir(0,0);
-	//delay(75);
-	wheelDir(0,1);
-	wheelPower(2,"off");
-}
-
-//---------------------------------------------------------------------------------------------
 
 

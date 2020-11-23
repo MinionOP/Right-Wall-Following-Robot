@@ -20,8 +20,7 @@ void wheelDir(uint32_t wheelNum, uint32_t dir);
 //wheel(0) = left, (1) = right, (2) = both. power(off) = stop motor, power(on) = start motor
 void wheelPower(uint32_t wheelNum, char* power);
 
-void rightTurn(void);
-void uTurn(void);
+
 //-------------------------------------------
 
 //Light sensor

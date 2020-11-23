@@ -23,48 +23,12 @@ typedef struct{
 	int PWMPeriod;
 }PIDController;
 
+void InitPID(PIDController *pid, double _PWMPeriod, double _baseWidth);
+void setPIDRight(PIDController* pid);
+void setPIDForward(PIDController* pid);
 
-
-void InitPID(PIDController *pid, double _PWMPeriod, double _baseWidth){
-	pid->Kp = 5.0;
-	pid->Ki = 0.1;
-	pid->Kd = 8.0;
-	pid->iMax = 3;
-	pid->iMin = -3;
-	pid->prevError = 0;
-	pid->prevMeasurement = 0;
-	pid->Correction = 0;
-	pid->targetRDist = 8.5;	//10cm
-    pid->baseWidth = _baseWidth;
-    pid->PWMPeriod = _PWMPeriod;
-}
-
-double PIDUpdate(PIDController *pid, double distMeasure){
-	double error = distMeasure - pid->targetRDist;
-	if(abs(error) <15){
-		pid-> Port = pid->Kp * error;
-		pid->Integral = pid->Ki *(error + pid->prevError);
-		if(pid->Integral > pid ->iMax){
-			pid->Integral = pid->iMax;
-		}
-		else if(pid->Integral < pid->iMin){
-			pid->Integral = pid->iMin;
-		}
-		pid->Derivative = pid->Kd * (error - pid->prevError);
-		pid->prevError = error;
-		pid->Correction = pid->Port + pid->Integral + pid->Derivative;
-
-		if(pid->Correction > (pid->PWMPeriod - pid->baseWidth)){
-			pid->Correction = pid->PWMPeriod - pid->baseWidth;
-		}
-	}
-	double newDutyCycle = ((pid->baseWidth - pid->Correction)/ (pid->PWMPeriod))*100;
-	return newDutyCycle;
-}
-
-double getPrevError(PIDController *pid){
-	return pid->prevError;
-}
+double PIDUpdate(PIDController *pid, double distMeasure);
+double getPrevError(PIDController *pid);
 
 
 #endif /* PIDCONTROLLER_H_ */
