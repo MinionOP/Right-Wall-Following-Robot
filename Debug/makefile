@@ -10,6 +10,9 @@ GEN_OPTS__FLAG := --cmd_file="configPkg/compiler.opt"
 GEN_CMDS__FLAG := -l"configPkg/linker.cmd"
 
 ORDERED_OBJS += \
+"./Driver.obj" \
+"./PIDController.obj" \
+"./Utilities.obj" \
 "./main.obj" \
 "./uartstdio.obj" \
 "../EK_TM4C123GXL.cmd" \
@@ -124,32 +127,32 @@ endif
 
 # Add inputs and outputs from these tool invocations to the build variables 
 EXE_OUTPUTS += \
-Milestone7.out \
+Milestone8.out \
 
 EXE_OUTPUTS__QUOTED += \
-"Milestone7.out" \
+"Milestone8.out" \
 
 BIN_OUTPUTS += \
-Milestone7.hex \
+Milestone8.hex \
 
 BIN_OUTPUTS__QUOTED += \
-"Milestone7.hex" \
+"Milestone8.hex" \
 
 
 # All Target
-all: Milestone7.out
+all: Milestone8.out
 
 # Tool invocations
-Milestone7.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS)
+Milestone8.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: ARM Linker'
-	"C:/ti/ccsv6/tools/compiler/arm_15.12.3.LTS/bin/armcl" -mv7M4 --code_state=16 --float_support=FPv4SPD16 -me -g --gcc --define=ccs="ccs" --define=PART_TM4C123GH6PM --define=ccs --define=TIVAWARE --diag_wrap=off --diag_warning=225 --diag_warning=255 --display_error_number --gen_func_subsections=on --abi=eabi -z -m"Milestone7.map" --stack_size=512 --heap_size=0 -i"C:/ti/ccsv6/tools/compiler/arm_15.12.3.LTS/lib" -i"C:/ti/ccsv6/tools/compiler/arm_15.12.3.LTS/include" --reread_libs --diag_wrap=off --warn_sections --display_error_number --xml_link_info="Milestone7_linkInfo.xml" --rom_model -o "Milestone7.out" $(ORDERED_OBJS)
+	"C:/ti/ccsv6/tools/compiler/arm_15.12.3.LTS/bin/armcl" -mv7M4 --code_state=16 --float_support=FPv4SPD16 -me -g --gcc --define=ccs="ccs" --define=PART_TM4C123GH6PM --define=ccs --define=TIVAWARE --diag_wrap=off --diag_warning=225 --diag_warning=255 --display_error_number --gen_func_subsections=on --abi=eabi -z -m"Milestone8.map" --stack_size=512 --heap_size=0 -i"C:/ti/ccsv6/tools/compiler/arm_15.12.3.LTS/lib" -i"C:/ti/ccsv6/tools/compiler/arm_15.12.3.LTS/include" --reread_libs --diag_wrap=off --warn_sections --display_error_number --xml_link_info="Milestone8_linkInfo.xml" --rom_model -o "Milestone8.out" $(ORDERED_OBJS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
-Milestone7.hex: $(EXE_OUTPUTS)
+Milestone8.hex: $(EXE_OUTPUTS)
 	@echo 'Invoking: ARM Hex Utility'
-	"C:/ti/ccsv6/tools/compiler/arm_15.12.3.LTS/bin/armhex"  -o "Milestone7.hex" $(EXE_OUTPUTS__QUOTED)
+	"C:/ti/ccsv6/tools/compiler/arm_15.12.3.LTS/bin/armhex"  -o "Milestone8.hex" $(EXE_OUTPUTS__QUOTED)
 	@echo 'Finished building: $@'
 	@echo ' '
 
@@ -157,8 +160,8 @@ Milestone7.hex: $(EXE_OUTPUTS)
 clean:
 	-$(RM) $(GEN_MISC_FILES__QUOTED)$(EXE_OUTPUTS__QUOTED)$(GEN_FILES__QUOTED)$(BIN_OUTPUTS__QUOTED)$(GEN_OPTS__QUOTED)$(GEN_CMDS__QUOTED)
 	-$(RMDIR) $(GEN_MISC_DIRS__QUOTED)
-	-$(RM) "main.d" "uartstdio.d" 
-	-$(RM) "main.obj" "uartstdio.obj" 
+	-$(RM) "Driver.d" "PIDController.d" "Utilities.d" "main.d" "uartstdio.d" 
+	-$(RM) "Driver.obj" "PIDController.obj" "Utilities.obj" "main.obj" "uartstdio.obj" 
 	-@echo 'Finished clean'
 	-@echo ' '
 
