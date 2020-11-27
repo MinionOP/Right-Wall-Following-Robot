@@ -1,4 +1,5 @@
 //Team 9: Charle Nguyen, Edward Sotelo, Josh McHenry
+//Milestone 9
 
 #include <xdc/std.h>
 #include <ti/sysbios/BIOS.h>
@@ -6,12 +7,13 @@
 #include <xdc/cfg/global.h>
 #include <xdc/runtime/Log.h>
 #include <xdc/runtime/System.h>
-
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <math.h>
+#include <string.h>
+
 
 #include "inc/hw_types.h"
 #include "inc/hw_memmap.h"
@@ -28,352 +30,275 @@
 
 #include "utils/uartstdio.h"
 
-#define NUM_OF_CMD 10					 //Number of cmds
-#define CMD_TABLE_SIZE (NUM_OF_CMD + 10) //Cmd Table size
+#include "PIDController.h"
+#include "Driver.h"
+#include "Utilities.h"
 
-void motorStop(void);
-void rWheelForward(void);
-void rWheelReverse(void);
-void lWheelForward(void);
-void lWheelReverse(void);
-void readFDistSensor(void);
-void readRDistSensor(void);
-void driveStart(void);
-void setRDutyCycle(void);
-void setLDutyCycle(void);
 
-void readFromConsole(void);
-void printTableToConsole(void);
-void InitHardware(void);
+#define BASE_WIDTH 300
+#define PERIOD 400
+#define BASE_DUTY 75	//75% duty cycle
 
-typedef struct
-{
-	char cmdName[2];
-	void (*functionPtr)(void);
-} Cmd_type;
+enum state_enum {FORWARD, RIGHT, LEFT};
 
-uint32_t hash(char *cmdName);		  //Create key
-void InitCmdTable(void);			  //Initalize cmd table
-void cmdLookUp(char *cmdName);		  //Look up cmd
-void cmdTableInsert(Cmd_type *toAdd); //Insert new cmd to cmd table
+//Task
+void lightSensorTask(void);
+void PIDControllerTask(void);
 
-Cmd_type ListOfCmd[NUM_OF_CMD] = {
-	{"P0", &motorStop},
-	{"RF", &rWheelForward},
-	{"RR", &rWheelReverse},
-	{"LF", &lWheelForward},
-	{"LR", &lWheelReverse},
-	{"R0", &readFDistSensor},
-	{"R1", &readRDistSensor},
-	{"DS", &driveStart},
-	{"DR", &setRDutyCycle},
-	{"DL", &setLDutyCycle},
-};
-edCmd_type *CmdTable[CMD_TABLE_SIZE];
+//Timer interrupt
+void TimerInt(void);
+void delay(uint32_t wait);
 
-//Create and return a key based on cmdName
-uint32_t hash(char *cmdName)
-{
-	uint32_t key = (int)cmdName[0] + (int)cmdName[1];
-	return key % (CMD_TABLE_SIZE);
-}
 
-//Initalize cmd table. Fill all element with NULL
-void InitCmdTable(void)
-{
-	uint8_t i;
-	for (i = 0; i < CMD_TABLE_SIZE; i++)
-	{
-		CmdTable[i] = NULL;
-	}
-	for (i = 0; i < NUM_OF_CMD; i++)
-	{
-		cmdTableInsert(&ListOfCmd[i]);
-	}
-}
+void AcquireDataTask(void);
+void TxDataTask(void);
+void swapBuffer(void);
 
-//Insert new cmd.
-void cmdTableInsert(Cmd_type *toAdd)
-{
-	uint32_t index = hash(toAdd->cmdName);
-	uint32_t i;
-	for (i = 0; i < CMD_TABLE_SIZE; i++)
-	{
-		index = (i + index) % (CMD_TABLE_SIZE);
-		if (CmdTable[index] == NULL)
-		{
-			CmdTable[index] = toAdd;
-			break;
-		}
-	}
-}
 
-//Look up cmd from char[2].
-void cmdLookUp(char *cmdName)
-{
-	uint32_t index = hash(cmdName);
-	uint32_t i;
-	for (i = 0; i < CMD_TABLE_SIZE; i++)
-	{
-		index = (i + index) % (CMD_TABLE_SIZE);
-		if ((CmdTable[index]->cmdName[0] == cmdName[0]) && (CmdTable[index]->cmdName[1] == cmdName[1]))
-		{
-			CmdTable[index]->functionPtr();
-			return;
-		}
-	}
-	System_printf("Invalid Command\n");
-	System_flush();
-}
+
+PIDController pidS;
+PIDController* pid = &pidS;
+uint8_t state = FORWARD;
+
 
 void main(void)
 {
-	InitCmdTable(); //Initialize cmd table
-	InitHardware(); //Initialize hardware
+	InitPID(pid, PERIOD, BASE_WIDTH);
+	InitHardware();
+	UARTprintf("\nForward State\n");
 	BIOS_start();
 }
 
-void InitHardware(void)
-{
-	//Set Clock to 40MHz
-	SysCtlClockSet(SYSCTL_SYSDIV_5 | SYSCTL_USE_PLL | SYSCTL_XTAL_16MHZ | SYSCTL_OSC_MAIN);
-
-	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOF); //Enable GPIOF Peripheral
-	while (!(SysCtlPeripheralReady(SYSCTL_PERIPH_GPIOF)))
-		;							   //Wait until GPIOF is ready
-	GPIOPinConfigure(GPIO_PF1_M1PWM5); //Configure GPIOF_pin 1 and pin 2 for PWM
-	GPIOPinConfigure(GPIO_PF2_M1PWM6);
-	GPIOPinTypePWM(GPIO_PORTF_BASE, GPIO_PIN_1 | GPIO_PIN_2);
-	GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE, GPIO_PIN_3 | GPIO_PIN_4); //Configure Pin 3 and Pin 4 as output. To control motor phase
-	GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_3 | GPIO_PIN_4, 0x18);	 //Output high for pin 3 and 4
-
-	SysCtlPeripheralEnable(SYSCTL_PERIPH_PWM1); //Enable PWM1 Peripheral
-	while (!SysCtlPeripheralReady(SYSCTL_PERIPH_PWM1))
-		; //Wait until PWM1 is ready
-
-	PWMGenConfigure(PWM1_BASE, PWM_GEN_2, PWM_GEN_MODE_DOWN | PWM_GEN_MODE_NO_SYNC); //Configure PWM gen 1 and gen 2
-	PWMGenConfigure(PWM1_BASE, PWM_GEN_3, PWM_GEN_MODE_DOWN | PWM_GEN_MODE_NO_SYNC);
-	PWMGenPeriodSet(PWM1_BASE, PWM_GEN_2, 400); //Set period: 400 clock ticks
-	PWMGenPeriodSet(PWM1_BASE, PWM_GEN_3, 400);
-	PWMPulseWidthSet(PWM1_BASE, PWM_OUT_5, 200); //50% duty cycle
-	PWMPulseWidthSet(PWM1_BASE, PWM_OUT_6, 200);
-	PWMOutputState(PWM1_BASE, PWM_OUT_5_BIT | PWM_OUT_6_BIT, true); //Enable signal
-
-	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB); //Enable GPIOB Peripheral
-	while (!(SysCtlPeripheralReady(SYSCTL_PERIPH_GPIOB)))
-		;													  //Wait until GPIOB is ready
-	GPIOPinTypeADC(GPIO_PORTB_BASE, GPIO_PIN_4 | GPIO_PIN_5); //Configure pin 4 and pin 5 as ADC
-
-	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB); //Enable GPIOB Peripheral
-	while (!(SysCtlPeripheralReady(SYSCTL_PERIPH_GPIOB)))
-		;													   //Wait until GPIOB is ready
-	GPIOPinConfigure(GPIO_PB0_U1RX);						   //Configure GPIOB0 as receiver
-	GPIOPinConfigure(GPIO_PB1_U1TX);						   //Configure GPIOB1 as transmitter
-	GPIOPinTypeUART(GPIO_PORTB_BASE, GPIO_PIN_0 | GPIO_PIN_1); //Configure as UART pin
-
-	SysCtlPeripheralEnable(SYSCTL_PERIPH_UART1); //Enable UART Peripheral
-	while (!(SysCtlPeripheralReady(SYSCTL_PERIPH_UART1)))
-		; //Wait until UART1 is ready
-
-	UARTConfigSetExpClk(UART1_BASE, SysCtlClockGet(), 115200, //Configure UART
-						UART_CONFIG_WLEN_8 | UART_CONFIG_STOP_ONE | UART_CONFIG_PAR_NONE);
-	UARTEnable(UART1_BASE);
-	UARTStdioConfig(1, 115200, SysCtlClockGet());
-
-	SysCtlPeripheralEnable(SYSCTL_PERIPH_ADC0); //Enable ADC0 Peripheral
-	while (!(SysCtlPeripheralReady(SYSCTL_PERIPH_ADC0)))
-		;														  //Wait until ADC0 is ready
-	ADCSequenceDisable(GPIO_PORTB_BASE, 0);						  //Disable before configuring
-	ADCSequenceConfigure(ADC0_BASE, 0, ADC_TRIGGER_PROCESSOR, 0); //Configure ADC0. Trigger by processor. Sequence Num = 0.
-	ADCSequenceStepConfigure(ADC0_BASE, 0, 0, ADC_CTL_CH10);	  //Ain10 = PB4 Ain11 = PB5
-	ADCSequenceStepConfigure(ADC0_BASE, 0, 1, ADC_CTL_CH11 | ADC_CTL_END | ADC_CTL_IE);
-	ADCSequenceEnable(ADC0_BASE, 0); //Enable ADC0
-}
-
 //---------------------------------------------------------------------------------------------
+//If robot is currently attempting to turn right
+uint32_t rightState = 0;
 
-//GPIOF pin 4 = Right Wheel Phase
-//GPIOF pin 2 = Right Wheel PWM (M1PWM6)
-void rWheelForward(void)
-{
-	printf("Right wheel forward\n");
-	GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_4, 0x10);
-}
-void rWheelReverse(void)
-{
-	printf("Right wheel reverse\n");
-	GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_4, 0x0);
-}
+//If delay has been called
+uint8_t delayStatus = 0;
 
-//---------------------------------------------------------------------------------------------
+//Will be true if robot crosses over line
+uint8_t overLine = 0;
 
-//GPIOF pin 3 = Left Wheel Phase
-//GPIOF pin 1 = Left Wheel PWM (M1PWM5)
-void lWheelForward(void)
-{
-	printf("Left wheel forward\n");
-	GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_3, 0x8);
-}
-void lWheelReverse(void)
-{
-	printf("Left wheel reverse\n");
-	GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_3, 0x0);
-}
+//Black or white crossline
+//'w' = white and 'b' = black
+char colorLine = 'b';
+volatile uint32_t time = 0;
 
-//---------------------------------------------------------------------------------------------
-//Controling duty cycle of motors
-uint32_t currentWidthL = 200;
-uint32_t currentWidthR = 200;
+uint8_t dataCollectStatus = 0;
 
-void setRDutyCycle(void)
-{
-	char dutyCycleArr[4];
-	int8_t i;
-	int32_t dutyCycleInt;
-	UARTprintf("\nEnter duty cycle for right motor: ");
-	for (i = 0; i < 4; i++)
-	{
-		while (!UARTCharsAvail(UART1_BASE))
-			;												  //Wait until user input char
-		dutyCycleArr[i] = UARTCharGetNonBlocking(UART1_BASE); //Store char into dutyCycleArr
-		UARTCharPut(UART1_BASE, dutyCycleArr[i]);			  //Echo back to console
-		if (dutyCycleArr[i] == 0x0D)
-		{ //Break if new line
-			UARTprintf("\n");
-			break;
+//Timer interrupt. Interrupt number: 39
+void TimerInt(void){
+	//Clear timer interrupt
+	TimerIntClear(TIMER2_BASE, TIMER_TIMA_TIMEOUT);
+	//increment time
+	time = time+1;
+	//Check if delay function is currently running or if the line has been crossed
+
+	if(delayStatus == 0 && overLine <2){
+		time = time%1000;
+
+		//Post to lightSensor
+		if(time%125 == 0){
+			//Semaphore_post(LightSem);
+		}
+		//Post to PIDController every 50ms
+		if(time%50 == 0){
+			//Post semaphore, pend semaphore in PIDControllerLoop
+			Semaphore_post(PIDSem);
+
+		}
+		//Post to AcquireData every 100ms
+		if(time%100 == 0 && dataCollectStatus == 1){
+			Semaphore_post(AcquireDataSem);
 		}
 	}
-
-	dutyCycleInt = atoi(dutyCycleArr); //Convert to int
-	if (dutyCycleInt > 100)
-	{
-		printf("Invalid duty cycle\n");
-	}
-	currentWidthR = (dutyCycleInt * (PWMGenPeriodGet(PWM1_BASE, PWM_GEN_3))) / 100;
-	PWMPulseWidthSet(PWM1_BASE, PWM_OUT_6, currentWidthR); //Set duty cycle for right motor
-	printf("Right Motor Duty Cycle: %d", currentWidthR);
 }
-void setLDutyCycle(void)
-{
-	char dutyCycleArr[4];
-	int8_t i;
-	int32_t dutyCycleInt;
-	UARTprintf("\nEnter duty cycle for left motor: ");
-	for (i = 0; i < 4; i++)
-	{
-		while (!UARTCharsAvail(UART1_BASE))
-			;												  //Wait until user input char
-		dutyCycleArr[i] = UARTCharGetNonBlocking(UART1_BASE); //Store char into dutyCycleArr
-		UARTCharPut(UART1_BASE, dutyCycleArr[i]);			  //Echo back to console
-		if (dutyCycleArr[i] == 0x0D)
-		{ //Break if new line
-			UARTprintf("\n");
-			break;
+
+
+//---------------------------------------------------------------------------------------------
+void delay(uint32_t wait){	//1ms
+	//Set delayStatus = 1, so interrupt will not post semaphore
+	delayStatus = 1;
+	uint32_t initial = time;
+	while(time - initial <wait);
+	delayStatus= 0;
+}
+
+
+//---------------------------------------------------------------------------------------------
+
+//Task Handle: PIDHandle
+void PIDTask(void){
+	while(1){
+		//Pend semaphore
+		char str[9];
+		char str2[9];
+
+
+		Semaphore_pend(PIDSem,BIOS_WAIT_FOREVER);
+		double rightWall = readRight();
+		double frontWall = readFront();
+
+		double Correction = PIDUpdate(pid, rightWall);
+
+		sprintf(str, "%.2f", frontWall);
+		sprintf(str2, "%.2f", rightWall);
+
+		UARTprintf("F: %s R: %s \n", str, str2);
+
+		//wheelDuty(BASE_DUTY, Correction);
+		switch(state){
+			case FORWARD:{
+				wheelDuty(BASE_DUTY, Correction);
+				if(rightWall > 15 && frontWall > 15){
+					//delay(100);
+					setPIDRight(pid);
+					UARTprintf("\nRight State\n");
+					state = RIGHT;
+				}
+				else if(rightWall > 15 && frontWall < 15){
+					setPIDRight(pid);
+					UARTprintf("\nRight State\n");
+					state = RIGHT;
+				}
+				else if(rightWall <15 && frontWall < 6){
+					wheelDuty(BASE_DUTY, BASE_DUTY);
+					wheelDir(0,0);
+					UARTprintf("Left State\n");
+					state = LEFT;
+				}
+				break;
+			}
+			case RIGHT:{
+				wheelDuty(BASE_DUTY, Correction);
+				if(rightWall < 9){
+					setPIDForward(pid);
+					UARTprintf("\nForward State\n");
+					state = FORWARD;
+				}
+				break;
+			}
+			case LEFT:{
+				if(rightWall < 15 && frontWall > 30){
+					UARTprintf("\nForward State\n");
+					wheelDir(0,1);
+					state = FORWARD;
+				}
+				break;
+			}
 		}
 	}
-
-	dutyCycleInt = atoi(dutyCycleArr); //Convert to int
-	if (dutyCycleInt > 100)
-	{
-		printf("Invalid duty cycle\n");
-	}
-	currentWidthL = (dutyCycleInt * (PWMGenPeriodGet(PWM1_BASE, PWM_GEN_2))) / 100;
-	PWMPulseWidthSet(PWM1_BASE, PWM_OUT_5, currentWidthL); //Set duty cycle for left motor
-	printf("Left Motor Duty Cycle: %d", currentWidthL);
 }
 
 //---------------------------------------------------------------------------------------------
-//Disable PWM
-void motorStop(void)
-{
-	System_printf("Motor Stop\n");
-	System_flush();
-	//PWMGenDisable(PWM1_BASE, PWM_GEN_3);	//Right Wheel
-	//PWMGenDisable(PWM1_BASE, PWM_GEN_2);	//Left Wheel
-	PWMOutputState(PWM1_BASE, PWM_OUT_5_BIT | PWM_OUT_6_BIT, false);
-}
-//---------------------------------------------------------------------------------------------
-//Start the motor. Enable PWM and enable signal output
-void driveStart(void)
-{
-	System_printf("Drive Start\n");
-	System_flush();
-	PWMGenEnable(PWM1_BASE, PWM_GEN_3); //Right Wheel
-	PWMGenEnable(PWM1_BASE, PWM_GEN_2); //Left Wheel
-	PWMOutputState(PWM1_BASE, PWM_OUT_5_BIT | PWM_OUT_6_BIT, true);
-}
-//---------------------------------------------------------------------------------------------
-//GPIOB pin 4 (Ain 10) = Front Distance Sensor
-void readFDistSensor(void)
-{
-	uint32_t DistSensorADCData[8];
-	uint8_t i;
-	double distInCm;
-
-	//Will take data 100 times. Can modify
-	for (i = 0; i < 100; i++)
-	{
-		ADCProcessorTrigger(ADC0_BASE, 0); //Trigger ADC
-		while (!ADCIntStatus(ADC0_BASE, 0, false))
-		{
+void lightSensorTask(void){
+	while(1){
+		//Pend semaphore
+		Semaphore_pend(LightSem, BIOS_WAIT_FOREVER);
+		uint8_t temp = 0;
+		temp = lightSensor(colorLine, dataCollectStatus);
+		//Number of times robot cross over line
+		overLine+=temp;
+		//Check whether the robot should start or stop collecting data
+		if(dataCollectStatus == 0 && temp == 1 || dataCollectStatus == 1 && temp == 0){
+			dataCollectStatus = 1;
 		}
-		ADCIntClear(ADC0_BASE, 0);															 //Clear ADC interrupt
-		ADCSequenceDataGet(ADC0_BASE, 0, &DistSensorADCData[0]);							 //Get data
-		distInCm = pow((9011.8 / DistSensorADCData[0]), (1 / .743));						 //Voltage[mV] = 9011.8(distance)^(-0.743)
-		printf("Front Distance Sensor: %d[mV]  %.2f[cm]\n", DistSensorADCData[0], distInCm); //Print front distance sensor data
-	}
-}
-
-//GPIOB pin 5 (Ain 11) = Right Distance Sensor
-void readRDistSensor(void)
-{
-	uint32_t DistSensorADCData[8];
-	uint8_t i;
-	double distInCm;
-
-	//Will take data 100 times. Can modify
-	for (i = 0; i < 100; i++)
-	{
-		ADCProcessorTrigger(ADC0_BASE, 0); //Trigger ADC
-		while (!ADCIntStatus(ADC0_BASE, 0, false))
-		{
+		//Will clear remaining data once the robot have cross over the 2nd line
+		else if(dataCollectStatus == 1 && temp == 1){
+			//Set dataStatus equal to 0. Will stop the timer interrupt from posting to DataAcquire semaphore
+			dataCollectStatus = 0;
+			//Clear remaining Data
+			Semaphore_post(TxDataSem);
 		}
-		ADCIntClear(ADC0_BASE, 0);															 //Clear ADC interrupt
-		ADCSequenceDataGet(ADC0_BASE, 0, &DistSensorADCData[0]);							 //Get data
-		distInCm = pow((17427 / DistSensorADCData[1]), (1 / 1.065));						 //Voltage[mV] = 17427(distance)^(-1.065)
-		printf("Right Distance Sensor: %d[mV]  %.2f[cm]\n", DistSensorADCData[1], distInCm); //Print right distance sensor data
+		else{
+			dataCollectStatus = 0;
+		}
 	}
 }
 
 //---------------------------------------------------------------------------------------------
-//readFromConsole is idle
-void readFromConsole(void)
-{
-	printTableToConsole();
-	UARTprintf("\nEnter Command: ");
-	char cmdInput[2];
-	int8_t i;
-	for (i = 0; i < 2; i++)
-	{
-		while (!UARTCharsAvail(UART1_BASE))
-			;											  //Wait until user input char
-		cmdInput[i] = UARTCharGetNonBlocking(UART1_BASE); //Store char into cmdInput
-		UARTCharPut(UART1_BASE, cmdInput[i]);			  //Echo back to console
+double Buffer1[20];
+double Buffer2[20];
+
+double *activeBuffer = Buffer1;
+double *backBuffer = Buffer2;
+uint8_t bufferPtr = 0;
+
+int currentSample = 0;
+int currentSample2 = 0;
+
+
+
+void AcquireDataTask(void){
+	while(1){
+		Semaphore_pend(AcquireDataSem,BIOS_WAIT_FOREVER);
+		GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_2, 0x4);
+		backBuffer[currentSample] = getPrevError(pid);
+		//increment position
+		currentSample++;
+		currentSample2++;
+		//Check if there's 20 data in the array
+		if(currentSample == 20){
+			currentSample = 0;
+			GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_2, 0x0);
+			//Post to TxData. Begin transferring data back to pc
+			Semaphore_post(TxDataSem);
+		}
 	}
-	cmdLookUp(cmdInput); //After two char input, look up cmd
 }
 
-void printTableToConsole(void)
-{
-	UARTprintf("Command Table\n");
-	UARTprintf("P0: Motor Brake\n");
-	UARTprintf("RF: Right Wheel Forward\n");
-	UARTprintf("RR: Right Wheel Reverse\n");
-	UARTprintf("LF: Left Wheel Forward\n");
-	UARTprintf("LR: Left Wheel Reverse\n");
-	UARTprintf("R0: Read Front Distance Sensor\n");
-	UARTprintf("R1: Read Right Distance Sensor\n");
-	UARTprintf("DS: Drive Start\n");
-	UARTprintf("DR: Set Duty Cycle for Right Motor\n");
-	UARTprintf("DL: Set Duty Cycle for Left Motor\n");
+void TxDataTask(void){
+	while(1){
+		Semaphore_pend(TxDataSem,BIOS_WAIT_FOREVER);
+		currentSample2%=21;
+		//Check whether 2nd black line had been crossed
+		if(currentSample2 == 20){
+			//Swap buffer
+			swapBuffer();
+			//Turn on green LED
+			GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_3, 0x8);
+			UARTprintf("-------Transmission Start-------\n");
+
+		}
+		else{
+			//2nd line has been crossed
+			//Turn off blue led and turn on green led
+			GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_2, 0x0);
+			GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_3, 0x8);
+			UARTprintf("-------Remaining Data-------\n");
+		}
+
+		int i;
+		char str[8];
+		//Outputting data to pc
+		for(i=0;i<currentSample2;i++){
+			sprintf(str,"%.2f",activeBuffer[i]);
+			UARTprintf("%s ",str);
+
+		}
+		UARTprintf("\n");
+		currentSample2 = 0;
+		UARTprintf("-------Transmission End-------\n");
+		//Turn off green led
+		GPIOPinWrite(GPIO_PORTF_BASE, GPIO_PIN_3, 0x0);
+	}
 }
+
+void swapBuffer(void){
+	if(bufferPtr == 0){
+		bufferPtr = 1;
+		activeBuffer = Buffer2;
+		backBuffer = Buffer1;
+	}
+	else{
+		bufferPtr = 0;
+		activeBuffer = Buffer1;
+		backBuffer = Buffer2;
+	}
+}
+
+
+
+
+
+
