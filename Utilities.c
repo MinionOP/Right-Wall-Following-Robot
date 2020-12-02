@@ -91,10 +91,6 @@ uint32_t lightSensor(char colorLine, int currentStatus){
 	case 'w':{
 		if(counter <200){
 			UARTprintf("Crossed White Line\n");
-			if(currentStatus == 1){
-				//SysCtlDelay(SysCtlClockGet()/5);
-				//wheelPower(2, "off");
-			}
 			status = 1;
 			break;
 		}
@@ -103,10 +99,6 @@ uint32_t lightSensor(char colorLine, int currentStatus){
 	case 'b':{
 		if(overBlackLine){
 			UARTprintf("Crossed Black Line\n");
-			if(currentStatus == 1){
-				//SysCtlDelay(SysCtlClockGet()/5);
-				//wheelPower(2, "off");
-			}
 			status = 1;
 			break;
 		}
