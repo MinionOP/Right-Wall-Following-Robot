@@ -69,8 +69,6 @@ uint32_t lightSensor(char colorLine, int currentStatus){
 	while(GPIOPinRead(GPIO_PORTE_BASE, GPIO_PIN_1)>0){
 		counter++;
 		//Set max counter to 400 if white
-
-
 		if(counter >=400 && colorLine == 'w'){
 			break;
 		}
@@ -82,9 +80,6 @@ uint32_t lightSensor(char colorLine, int currentStatus){
 
 
 	}
-	//Print value to bluetooth
-
-
 
 	switch(colorLine){
 	//White crosslines
