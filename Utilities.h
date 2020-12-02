@@ -1,9 +1,18 @@
 #ifndef UTILITIES_H_
 #define UTILITIES_H_
 
+
+/*
 #define BASE_WIDTH 300						//75% duty cycle
 #define BASE_DUTY 75	//75% duty cycle
 #define PERIOD 400
+
+*/
+
+
+#define BASE_WIDTH 340
+#define PERIOD 400
+#define BASE_DUTY 85	//85% duty cycle
 
 //read Front Distance Sensor
 double readFront(void);
@@ -24,7 +33,7 @@ void wheelPower(uint32_t wheelNum, char* power);
 //-------------------------------------------
 
 //Light sensor
-uint8_t lightSensor(char colorLine, int currentStatus);
+uint32_t lightSensor(char colorLine, int currentStatus);
 
 
 #endif /* UTILITIES_H_ */

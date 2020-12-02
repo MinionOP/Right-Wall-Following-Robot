@@ -100,9 +100,12 @@ void InitAnalog(void){
 	while(!(SysCtlPeripheralReady(SYSCTL_PERIPH_GPIOF)));							//Wait until GPIOF is ready
 	GPIOPinTypeGPIOOutput(GPIO_PORTF_BASE,GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3);		//LED
 
+
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOE);									//Enable GPIOE Peripheral
 	while(!(SysCtlPeripheralReady(SYSCTL_PERIPH_GPIOE)));							//Wait until GPIOE is ready
-	GPIOPinTypeGPIOOutput(GPIO_PORTE_BASE,GPIO_PIN_0);								//Light sensor output
+	//GPIOPinTypeGPIOOutput(GPIO_PORTE_BASE,GPIO_PIN_0);								//Light sensor output
+	GPIOPinTypeGPIOOutput(GPIO_PORTE_BASE,GPIO_PIN_1);								//Light sensor output
+
 
 
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOB);									//Enable GPIOB Peripheral

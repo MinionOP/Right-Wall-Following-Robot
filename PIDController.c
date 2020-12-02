@@ -73,7 +73,9 @@ void setPIDForward(PIDController* pid){
 
 }
 
-
+void setPIDBaseWidth(PIDController* pid, double _baseWidth){
+	pid->baseWidth = _baseWidth;
+}
 
 double getPrevError(PIDController *pid){
 	return pid->prevError;

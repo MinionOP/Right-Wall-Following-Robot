@@ -1,5 +1,5 @@
 //Team 9: Charle Nguyen, Edward Sotelo, Josh McHenry
-//Milestone 9
+//Milestone 10
 
 #include <xdc/std.h>
 #include <ti/sysbios/BIOS.h>
@@ -35,11 +35,20 @@
 #include "Utilities.h"
 
 
+/*
 #define BASE_WIDTH 300
 #define PERIOD 400
 #define BASE_DUTY 75	//75% duty cycle
+*/
 
-enum state_enum {FORWARD, RIGHT, LEFT};
+
+#define BASE_WIDTH 340
+#define PERIOD 400
+#define BASE_DUTY 85	//85% duty cycle
+
+
+
+enum state_enum {FORWARD, RIGHT, LEFT, STOP};
 
 //Task
 void lightSensorTask(void);
@@ -47,7 +56,6 @@ void PIDControllerTask(void);
 
 //Timer interrupt
 void TimerInt(void);
-void delay(uint32_t wait);
 
 
 void AcquireDataTask(void);
@@ -65,7 +73,6 @@ void main(void)
 {
 	InitPID(pid, PERIOD, BASE_WIDTH);
 	InitHardware();
-	UARTprintf("\nForward State\n");
 	BIOS_start();
 
 }
@@ -74,9 +81,6 @@ void main(void)
 //If robot is currently attempting to turn right
 uint32_t rightState = 0;
 
-//If delay has been called
-uint8_t delayStatus = 0;
-
 //Will be true if robot crosses over line
 uint8_t overLine = 0;
 
@@ -84,47 +88,66 @@ uint8_t overLine = 0;
 //'w' = white and 'b' = black
 char colorLine = 'b';
 volatile uint32_t time = 0;
+volatile uint32_t timeForMaze = 0;
+volatile uint32_t time2 = 1000;
 
+//Stop count down
+uint8_t countDownStatus = 0;
 uint8_t dataCollectStatus = 0;
+
+int finishStatus = 0;
+
+double currentLDuty = BASE_DUTY;
+double currentLWidth = BASE_WIDTH;
 
 //Timer interrupt. Interrupt number: 39
 void TimerInt(void){
 	//Clear timer interrupt
 	TimerIntClear(TIMER2_BASE, TIMER_TIMA_TIMEOUT);
+	Swi_post(toDoHandle);
+
+
+}
+
+//software interrupt
+void toDo(void){
+
 	//increment time
 	time = time+1;
-	//Check if delay function is currently running or if the line has been crossed
 
-	if(delayStatus == 0 && overLine <2){
-		time = time%1000;
-
-		//Post to lightSensor
-		if(time%125 == 0){
-			//Semaphore_post(LightSem);
-		}
-		//Post to PIDController every 50ms
-		if(time%50 == 0){
-			//Post semaphore, pend semaphore in PIDControllerLoop
-			Semaphore_post(PIDSem);
-
-		}
-		//Post to AcquireData every 100ms
-		if(time%100 == 0 && dataCollectStatus == 1){
-			Semaphore_post(AcquireDataSem);
-		}
+	if(overLine){
+		timeForMaze++;
 	}
+
+	//Make sure robot doesn't count same line twice
+	if(countDownStatus == 1 && time2 >0){
+		time2--;
+	}
+	else if(time2 == 0){
+		time2 = 1000;
+		countDownStatus = 0;
+	}
+
+
+	time = time%1000;
+
+	//Post to lightSensor
+	if(time%30 == 0 && countDownStatus == 0 && overLine < 3){
+		Semaphore_post(LightSem);
+	}
+	//Post to PIDController every 50ms
+	if(time%50 == 0 && !finishStatus){
+		//Post semaphore, pend semaphore in PIDControllerLoop
+		Semaphore_post(PIDSem);
+
+	}
+	//Post to AcquireData every 100ms
+	if(time%100 == 0 && dataCollectStatus == 1 && overLine < 3){
+		Semaphore_post(AcquireDataSem);
+	}
+
+
 }
-
-
-//---------------------------------------------------------------------------------------------
-void delay(uint32_t wait){	//1ms
-	//Set delayStatus = 1, so interrupt will not post semaphore
-	delayStatus = 1;
-	uint32_t initial = time;
-	while(time - initial <wait);
-	delayStatus= 0;
-}
-
 
 //---------------------------------------------------------------------------------------------
 
@@ -132,9 +155,6 @@ void delay(uint32_t wait){	//1ms
 void PIDTask(void){
 	while(1){
 		//Pend semaphore
-		char str[9];
-		char str2[9];
-
 
 		Semaphore_pend(PIDSem,BIOS_WAIT_FOREVER);
 		double rightWall = readRight();
@@ -142,30 +162,23 @@ void PIDTask(void){
 
 		double Correction = PIDUpdate(pid, rightWall);
 
-		sprintf(str, "%.2f", frontWall);
-		sprintf(str2, "%.2f", rightWall);
-
-		UARTprintf("F: %s R: %s \n", str, str2);
-
-		//wheelDuty(BASE_DUTY, Correction);
 		switch(state){
 			case FORWARD:{
 				wheelDuty(BASE_DUTY, Correction);
-				if(rightWall > 15 && frontWall > 15){
-					//delay(100);
+				if(overLine == 3){
+					state = STOP;
+				}
+				else if(rightWall > 15 && frontWall > 15){
 					setPIDRight(pid);
-					UARTprintf("\nRight State\n");
 					state = RIGHT;
 				}
 				else if(rightWall > 15 && frontWall < 15){
 					setPIDRight(pid);
-					UARTprintf("\nRight State\n");
 					state = RIGHT;
 				}
 				else if(rightWall <15 && frontWall < 6){
 					wheelDuty(BASE_DUTY, BASE_DUTY);
 					wheelDir(0,0);
-					UARTprintf("Left State\n");
 					state = LEFT;
 				}
 				break;
@@ -174,18 +187,28 @@ void PIDTask(void){
 				wheelDuty(BASE_DUTY, Correction);
 				if(rightWall < 9){
 					setPIDForward(pid);
-					UARTprintf("\nForward State\n");
 					state = FORWARD;
 				}
+
 				break;
 			}
 			case LEFT:{
 				if(rightWall < 15 && frontWall > 30){
-					UARTprintf("\nForward State\n");
 					wheelDir(0,1);
 					state = FORWARD;
 				}
 				break;
+			}
+			case STOP:{
+				currentLWidth/=1.3;
+				setPIDBaseWidth(pid, currentLWidth);
+				if(currentLWidth < 50){
+					wheelPower(2,0);
+					finishStatus = 1;
+					UARTprintf("You finished the maze in %d seconds!\n", timeForMaze/1000);
+				}
+				break;
+
 			}
 		}
 	}
@@ -196,10 +219,17 @@ void lightSensorTask(void){
 	while(1){
 		//Pend semaphore
 		Semaphore_pend(LightSem, BIOS_WAIT_FOREVER);
-		uint8_t temp = 0;
+		uint8_t temp;
 		temp = lightSensor(colorLine, dataCollectStatus);
+
 		//Number of times robot cross over line
 		overLine+=temp;
+
+		if(temp == 1){
+			countDownStatus = 1;
+			//UARTprintf("Number of line crossed: %d\n",overLine);
+		}
+
 		//Check whether the robot should start or stop collecting data
 		if(dataCollectStatus == 0 && temp == 1 || dataCollectStatus == 1 && temp == 0){
 			dataCollectStatus = 1;
@@ -214,6 +244,7 @@ void lightSensorTask(void){
 		else{
 			dataCollectStatus = 0;
 		}
+
 	}
 }
 
