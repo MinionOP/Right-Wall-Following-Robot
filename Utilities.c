@@ -4,11 +4,9 @@
 #include <stdbool.h>
 #include <math.h>
 #include <string.h>
-
 #include "inc/hw_types.h"
 #include "inc/hw_memmap.h"
 #include "inc/hw_ints.h"
-
 #include "driverlib/sysctl.h"
 #include "driverlib/gpio.h"
 #include "driverlib/interrupt.h"
@@ -17,7 +15,6 @@
 #include "driverlib/pin_map.h"
 #include "driverlib/uart.h"
 #include "driverlib/pwm.h"
-
 #include "utils/uartstdio.h"
 #include "Driver.h"
 #include "Utilities.h"
@@ -27,7 +24,6 @@
 double readFront(void){
 	uint32_t DistSensorADCData[8];
 	double distInCm;
-
 	ADCProcessorTrigger(ADC0_BASE, 0);									//Trigger ADC
 	while(!ADCIntStatus(ADC0_BASE, 0, false)){}
 	ADCIntClear(ADC0_BASE, 0);											//Clear ADC interrupt
@@ -40,7 +36,6 @@ double readFront(void){
 double readRight(void){
 	uint32_t DistSensorADCData[8];
 	double distInCm;
-
 	ADCProcessorTrigger(ADC0_BASE, 0);									//Trigger ADC
 	while(!ADCIntStatus(ADC0_BASE, 0, false)){}
 	ADCIntClear(ADC0_BASE, 0);											//Clear ADC interrupt
@@ -49,76 +44,35 @@ double readRight(void){
 	return distInCm;
 }
 
-
 //---------------------------------------------------------------------------------------------
 
-uint8_t lightSensor(char colorLine, int currentStatus){
+uint32_t lightSensor(char colorLine, int currentStatus){
 	int counter = 0;
 	uint8_t overBlackLine = 0;
 	uint8_t status = 0;
-
 	//Configure pin E0 as digital output
-	GPIOPinTypeGPIOOutput(GPIO_PORTE_BASE, GPIO_PIN_0);
+	GPIOPinTypeGPIOOutput(GPIO_PORTE_BASE, GPIO_PIN_1);
 	//Output high to pin B6
-	GPIOPinWrite(GPIO_PORTE_BASE, GPIO_PIN_0, 0x1);
+	GPIOPinWrite(GPIO_PORTE_BASE, GPIO_PIN_1, 0x2);
 	//Wait 1 mircosecond for capacitor to charge
 	SysCtlDelay((SysCtlClockGet()/100000)-1);
 	//Change pin E0 from digital output to digital input
-	GPIOPinTypeGPIOInput(GPIO_PORTE_BASE, GPIO_PIN_0);
+	GPIOPinTypeGPIOInput(GPIO_PORTE_BASE, GPIO_PIN_1);
 	//Measure the time it takes the capacitor to discharge, until Pin B6 read low.
-	while(GPIOPinRead(GPIO_PORTE_BASE, GPIO_PIN_0)>0){
+	while(GPIOPinRead(GPIO_PORTE_BASE, GPIO_PIN_1)>0){
 		counter++;
-		//Set max counter to 400 if white
-		if(counter >=400 && colorLine == 'w'){
-			break;
-		}
 		//Set max counter
-		else if(counter >=1090 && colorLine == 'b'){
+		if(counter >=2000 && colorLine == 'b'){
 			overBlackLine = 1;
 			break;
 		}
 	}
-	//Print value to bluetooth
-	//UARTprintf("LS: %d\n",counter);
-
-	switch(colorLine){
-	//White crosslines
-	case 'w':{
-		if(counter <200){
-			UARTprintf("Crossed White Line\n");
-			if(currentStatus == 1){
-				SysCtlDelay(SysCtlClockGet()/5);
-				wheelPower(2, "off");
-				//SysCtlDelay(SysCtlClockGet()*3);
-				//wheelPower(2, "on");
-
-			}
-			status = 1;
-			break;
-		}
+	if(overBlackLine){
+		UARTprintf("Crossed Black Line\n");
+		status = 1;
 	}
-	//Black crosslines
-	case 'b':{
-		if(overBlackLine){
-			UARTprintf("Crossed Black Line\n");
-			if(currentStatus == 1){
-				SysCtlDelay(SysCtlClockGet()/5);
-				wheelPower(2, "off");
-				//SysCtlDelay(SysCtlClockGet()*3);
-				//wheelPower(2, "on");
-			}
-			status = 1;
-			break;
-		}
-	}
-	}
-
-
-
 	return status;
 }
-
-
 
 //---------------------------------------------------------------------------------------------
 //Controling duty cycle of motors
@@ -196,8 +150,3 @@ void wheelPower(uint32_t wheelNum, char* power){
 	}
 }
 }
-
-//---------------------------------------------------------------------------------------------
-
-
-
