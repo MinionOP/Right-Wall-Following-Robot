@@ -78,7 +78,9 @@ void TimerInt(void){
 void toDo(void){
 	//increment time
 	time = time+1;
-	timeForMaze++;
+	if(overLine){
+		timeForMaze++;
+	}
 	//Make sure robot doesn't count same line twice
 	if(countDownStatus == 1 && time2 >0){
 		time2--;
