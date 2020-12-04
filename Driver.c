@@ -43,7 +43,7 @@ void InitMotors(void){
 	GPIOPinConfigure(GPIO_PD1_M1PWM1);												//Configure GPIOD_pin 1 for PWM
 	GPIOPinTypePWM(GPIO_PORTD_BASE, GPIO_PIN_1);
 	GPIOPinTypeGPIOOutput(GPIO_PORTD_BASE, GPIO_PIN_0 | GPIO_PIN_2);				//Configure Pin 0 and Pin 2 as output. To control motor phase
-	GPIOPinWrite(GPIO_PRTD_BASE, GPIO_PIN_0 | GPIO_PIN_2, 0x5);					//Output high for pin 3 and 4
+	GPIOPinWrite(GPIO_PORTD_BASE, GPIO_PIN_0 | GPIO_PIN_2, 0x5);					//Output high for pin 3 and 4
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);									//Enable GPIOA Peripheral
 	while(!(SysCtlPeripheralReady(SYSCTL_PERIPH_GPIOA)));							//Wait until GPIOA is ready
 	GPIOPinConfigure(GPIO_PA6_M1PWM2);												//Configure GPIOD_pin 1 for PWM
