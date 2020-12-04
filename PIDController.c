@@ -1,6 +1,5 @@
 #include "PIDController.h"
 
-
 void InitPID(PIDController *pid, double _PWMPeriod, double _baseWidth){
 	pid->Kp = 10.0;
 	pid->Ki = 0.1;
@@ -20,7 +19,6 @@ double PIDUpdate(PIDController *pid, double distMeasure){
 	if(abs(error) > 30){
 		error = 15;
 	}
-	//if(abs(error) <15){
 	pid-> Port = pid->Kp * error;
 	pid->Integral = pid->Ki *(error + pid->prevError);
 	if(pid->Integral > pid ->iMax){
@@ -33,19 +31,6 @@ double PIDUpdate(PIDController *pid, double distMeasure){
 	pid->prevError = error;
 	pid->Correction = pid->Port + pid->Integral + pid->Derivative;
 
-	/*if(pid->Correction > pid->baseWidth){
-		//Min 10 duty cycle
-		pid->Correction = pid->baseWidth-40;
-	}*/
-	//}
-/*
-	if(pid->Correction > pid->PWMPeriod){
-		pid->Correction = pid->PWMPeriod;
-	}
-	else if(pid->Correction < 0){
-		pid->Correction = 0;
-	}*/
-
 	double newDutyCycle = ((pid->baseWidth - pid->Correction)/ (pid->PWMPeriod))*100;
 	if(newDutyCycle > 100){
 		newDutyCycle = 90;
@@ -53,7 +38,6 @@ double PIDUpdate(PIDController *pid, double distMeasure){
 	else if(newDutyCycle < 10){
 		newDutyCycle = 10;
 	}
-
 	return newDutyCycle;
 }
 void setPIDRight(PIDController* pid){
