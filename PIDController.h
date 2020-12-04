@@ -26,6 +26,7 @@ typedef struct{
 void InitPID(PIDController *pid, double _PWMPeriod, double _baseWidth);
 void setPIDRight(PIDController* pid);
 void setPIDForward(PIDController* pid);
+void setPIDBaseWidth(PIDController* pid, double _baseWidth);
 
 double PIDUpdate(PIDController *pid, double distMeasure);
 double getPrevError(PIDController *pid);

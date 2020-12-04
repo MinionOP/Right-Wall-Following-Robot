@@ -46,7 +46,7 @@ void InitMotors(void){
 	GPIOPinWrite(GPIO_PORTD_BASE, GPIO_PIN_0 | GPIO_PIN_2, 0x5);					//Output high for pin 3 and 4
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);									//Enable GPIOA Peripheral
 	while(!(SysCtlPeripheralReady(SYSCTL_PERIPH_GPIOA)));							//Wait until GPIOA is ready
-	GPIOPinConfigure(GPIO_PA6_M1PWM2);												//Configure GPIOD_pin 1 for PWM
+	GPIOPinConfigure(GPIO_PA6_M1PWM2);												//Configure GPIOA_pin 6 for PWM
 	GPIOPinTypePWM(GPIO_PORTA_BASE, GPIO_PIN_6);
 	SysCtlPeripheralEnable(SYSCTL_PERIPH_PWM1);										//Enable PWM1 Peripheral
 	while(!SysCtlPeripheralReady(SYSCTL_PERIPH_PWM1));								//Wait until PWM1 is ready

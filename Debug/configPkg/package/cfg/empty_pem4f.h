@@ -34,6 +34,9 @@ extern const ti_sysbios_knl_Semaphore_Handle AcquireDataSem;
 #include <ti/sysbios/knl/Semaphore.h>
 extern const ti_sysbios_knl_Semaphore_Handle TxDataSem;
 
+#include <ti/sysbios/knl/Swi.h>
+extern const ti_sysbios_knl_Swi_Handle toDoHandle;
+
 extern int xdc_runtime_Startup__EXECFXN__C;
 
 extern int xdc_runtime_Startup__RESETFXN__C;
